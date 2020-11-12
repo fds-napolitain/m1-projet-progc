@@ -10,6 +10,24 @@
 
 int main(int argc, char** argv) {
 	pid_t pid;
+
+	resource montpellier = {
+		.cpu = 60,
+		.ram = 150
+	};
+	resource lyon = {
+		.cpu = 90,
+		.ram = 120
+	};
+	resource paris = {
+		.cpu = 30,
+		.ram = 20
+	};
+	resources cloud = {
+		.montpellier = montpellier,
+		.lyon = lyon,
+		.paris = paris
+	};
 	
 	switch (pid = fork())	{
 		case -1: // erreur
@@ -19,23 +37,6 @@ int main(int argc, char** argv) {
 
 			break;
 		default: // pere
-			resource montpellier = {
-				.cpu = 60,
-				.ram = 150
-			};
-			resource lyon = {
-				.cpu = 90,
-				.ram = 120
-			};
-			resource paris = {
-				.cpu = 30,
-				.ram = 20
-			};
-			resources cloud = {
-				.montpellier = montpellier,
-				.lyon = lyon,
-				.paris = paris
-			};
 			printf("Création de la clé d'accès IPC\n");
 			key_t key = ftok("server", 1);
 

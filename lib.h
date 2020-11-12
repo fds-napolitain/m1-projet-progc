@@ -1,5 +1,5 @@
 // ressources pour un datacenter
-typedef struct	{
+typedef struct {
 	int cpu;
 	int ram;
 } resource;
