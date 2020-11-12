@@ -8,10 +8,13 @@
 int main(int argc, char** argv) {
 	pid_t pid;
 
+	// ressources pour un datacenter
 	typedef struct resource	{
 		int cpu;
 		int ram;
 	} resource;
+
+	// resources pour tous les datacenters
 	typedef struct resources {
 		resource montpellier;
 		resource lyon;
@@ -46,7 +49,7 @@ int main(int argc, char** argv) {
 			printf("Création de la clé d'accès IPC\n");
 			key_t key = ftok("server", 1);
 
-			int sh_id = shmget(key, sizeof(resource), IPC_CREAT | 0666);
+			int sh_id = shmget(key, sizeof(resources), IPC_CREAT | 0666);
 
 			wait(0);
 			break;
