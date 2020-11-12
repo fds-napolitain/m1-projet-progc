@@ -23,11 +23,7 @@ int main(int argc, char** argv) {
 		.cpu = 30,
 		.ram = 20
 	};
-	resources cloud = {
-		.montpellier = montpellier,
-		.lyon = lyon,
-		.paris = paris
-	};
+
 	
 	switch (pid = fork())	{
 		case -1: // erreur
@@ -42,11 +38,22 @@ int main(int argc, char** argv) {
 
 			printf("Création du segment de mémoire partagée\n");
 			int sh_id = shmget(key, sizeof(resources), IPC_CREAT | 0666);
-
 			if (sh_id == -1) {
 				perror("shmget");
 				exit(-1);
 			}
+
+			printf("Initialisation de la variable partagée\n");
+			resources* cloud = shmat(sh_id, 0, 0);
+			if ((int) cloud == -1) {
+				perror("shmat");
+			}
+			cloud->montpellier = montpellier;
+			cloud->lyon = lyon;
+			cloud->paris = paris;
+
+			printf("Détachement de la variable partagée\n");
+			shmdt(cloud);
 
 			wait(0);
 			break;
