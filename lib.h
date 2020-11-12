@@ -1,7 +1,7 @@
 // ressources pour un datacenter
 typedef struct {
 	int cpu;
-	int ram;
+	int stockage;
 } resource;
 
 // resources pour tous les datacenters

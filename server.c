@@ -43,7 +43,12 @@ int main(int argc, char** argv) {
 			break;
 		default: // pere
 			printf("L'adresse de la variable pere est : %p\n", cloud);
-
+			montpellier.cpu = 60;
+			montpellier.stockage = 700;
+			lyon.cpu = 64;
+			lyon.stockage = 2000;
+			paris.cpu = 10;
+			paris.stockage = 100;
 			cloud->montpellier = montpellier;
 			cloud->lyon = lyon;
 			cloud->paris = paris;
