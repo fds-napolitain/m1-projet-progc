@@ -5,20 +5,18 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-#define MONTPELLIER 0
-#define LYON 1
-#define PARIS 2
-
 int main(int argc, char** argv) {
 	pid_t pid;
 
-	typedef struct resources {
-		int location;
-	} resources;
 	typedef struct resource	{
 		int cpu;
 		int ram;
 	} resource;
+	typedef struct resources {
+		resource montpellier;
+		resource lyon;
+		resource paris; 
+	} resources;
 	
 	switch (pid = fork())	{
 		case -1: // erreur
@@ -39,6 +37,11 @@ int main(int argc, char** argv) {
 			resource paris = {
 				.cpu = 30,
 				.ram = 20,
+			};
+			resources cloud = {
+				.montpellier = montpellier,
+				.lyon = lyon,
+				.paris = paris,
 			};
 			printf("Création de la clé d'accès IPC\n");
 			key_t key = ftok("server", 1);
