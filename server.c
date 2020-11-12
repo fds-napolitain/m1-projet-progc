@@ -9,8 +9,6 @@
 #include "lib.h"
 
 int main(int argc, char** argv) {
-	pid_t pid;
-
 	resource montpellier = {
 		.cpu = 60,
 		.ram = 150
@@ -23,14 +21,13 @@ int main(int argc, char** argv) {
 		.cpu = 30,
 		.ram = 20
 	};
-
 	
-	switch (pid = fork())	{
+	switch (fork())	{
 		case -1: // erreur
 			printf("Erreur de fork\n");
 			exit(-1);
 		case 0: // fils
-
+			printf("Le fiston\n");
 			break;
 		default: // pere
 			printf("Création de la clé d'accès IPC\n");
