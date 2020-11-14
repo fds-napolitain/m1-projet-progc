@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
 
 	int clientSocket, ret;
 	struct sockaddr_in serverAddr;
-	datacenter buffer;
+	location buffer;
 
 	clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if(clientSocket < 0){
@@ -36,14 +36,22 @@ int main(int argc, char** argv) {
 
 	while(1){
 		printf("Client: ");
-		scanf()
-		send(clientSocket, buffer, strlen(buffer), 0);
+		scanf("%s\n", buffer.nom);
+		printf("Cpu: ");
+		scanf("%i\n", buffer.cpu);
+		printf("Stockage: ");
+		scanf("%i\n", buffer.stockage);
+		printf("Mode: ");
+		scanf("%i\n", buffer.mode);
+		char* t = buffer;
 
-		if(strcmp(buffer, ":exit") == 0){
+		send(clientSocket, buffer, sizeof(buffer), 0);
+
+		/*if(strcmp(buffer, ":exit") == 0){
 			close(clientSocket);
 			printf("[-]Disconnected from server.\n");
 			exit(1);
-		}
+		}*/
 
 		if(recv(clientSocket, buffer, 1024, 0) < 0){
 			printf("[-]Error in receiving data.\n");

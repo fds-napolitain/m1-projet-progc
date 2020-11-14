@@ -1,4 +1,6 @@
 #define PORT 4444
+#define EXCLUSIF 1
+#define PARTAGE 0
 
 // ressources pour un datacenter
 typedef struct {
@@ -20,5 +22,5 @@ typedef struct {
 	int cpu;
 	int stockage;
 	char* nom;
-	char* mode;
+	int mode;
 } location;
