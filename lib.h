@@ -1,3 +1,5 @@
+#define PORT 4444
+
 // ressources pour un datacenter
 typedef struct {
 	int cpu;
