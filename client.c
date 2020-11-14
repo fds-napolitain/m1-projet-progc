@@ -1,5 +1,3 @@
-#include "lib.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,11 +7,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "lib.h"
+
 int main(int argc, char** argv) {
 
 	int clientSocket, ret;
 	struct sockaddr_in serverAddr;
-	char buffer[1024];
+	datacenter buffer;
 
 	clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if(clientSocket < 0){
@@ -35,8 +35,8 @@ int main(int argc, char** argv) {
 	printf("[+]Connected to Server.\n");
 
 	while(1){
-		printf("Client: \t");
-		scanf("%s", &buffer[0]);
+		printf("Client: ");
+		scanf()
 		send(clientSocket, buffer, strlen(buffer), 0);
 
 		if(strcmp(buffer, ":exit") == 0){
