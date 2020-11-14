@@ -4,11 +4,21 @@
 typedef struct {
 	int cpu;
 	int stockage;
-} resource;
+	char** exclusif;
+	char** partage;
+} datacenter;
 
-// resources pour tous les datacenters
+// ressources pour tous les datacenters
 typedef struct {
-	resource montpellier;
-	resource lyon;
-	resource paris; 
-} resources;
+	datacenter montpellier;
+	datacenter lyon;
+	datacenter paris; 
+} datacenters;
+
+// structure pour envoyer une demande de location
+typedef struct {
+	int cpu;
+	int stockage;
+	char* nom;
+	char* mode;
+} location;
