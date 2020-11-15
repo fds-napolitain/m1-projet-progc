@@ -116,59 +116,60 @@ int main(int argc, char** argv) {
 					switch (localisation) {
 						case MONTPELLIER:
 							if (montpellier.cpu > buffer.cpu && montpellier.stockage > buffer.stockage && mode == EXCLUSIF) {
-								int index = (sizeof(montpellier.exclusif) / sizeof(location)) - 1;
+								int index = (sizeof(*montpellier.exclusif) / sizeof(location)) - 1;
 								montpellier.exclusif[index].cpu = buffer.cpu;
 								montpellier.exclusif[index].stockage = buffer.stockage;
-								montpellier.exclusif[index].nom = buffer.nom;
+								*montpellier.exclusif[index].nom = buffer.nom;
 								montpellier.cpu -= buffer.cpu;
 								montpellier.stockage -= buffer.stockage;
-								realloc(montpellier.exclusif, sizeof(montpellier.exclusif) + sizeof(location));
+								montpellier.exclusif = realloc(montpellier.exclusif, sizeof(montpellier.exclusif) + sizeof(location));
 							} else if (mode == PARTAGE) {
-								int index = (sizeof(montpellier.partage) / sizeof(location)) - 1;
+								int index = (sizeof(*montpellier.partage) / sizeof(location)) - 1;
 								montpellier.partage[index].cpu = buffer.cpu;
 								montpellier.partage[index].stockage = buffer.stockage;
-								montpellier.partage[index].nom = buffer.nom;
-								realloc(montpellier.partage, sizeof(montpellier.partage) + sizeof(location));
+								*montpellier.partage[index].nom = buffer.nom;
+								montpellier.partage = realloc(montpellier.partage, sizeof(montpellier.partage) + sizeof(location));
 							}
 							break;
 						case LYON:
 							if (lyon.cpu > buffer.cpu && lyon.stockage > buffer.stockage && mode == EXCLUSIF) {
-								int index = sizeof(lyon.exclusif) / sizeof(location);
+								int index = (sizeof(*lyon.exclusif) / sizeof(location)) - 1;
 								lyon.exclusif[index].cpu = buffer.cpu;
 								lyon.exclusif[index].stockage = buffer.stockage;
-								lyon.exclusif[index].nom = buffer.nom;
+								*lyon.exclusif[index].nom = buffer.nom;
 								lyon.cpu -= buffer.cpu;
 								lyon.stockage -= buffer.stockage;
-								realloc(lyon.exclusif, sizeof(lyon.exclusif) + sizeof(location));
+								lyon.exclusif = realloc(lyon.exclusif, sizeof(lyon.exclusif) + sizeof(location));
 							} else if (mode == PARTAGE) {
-								int index = (sizeof(lyon.partage) / sizeof(location)) - 1;
+								int index = (sizeof(*lyon.partage) / sizeof(location)) - 1;
 								lyon.partage[index].cpu = buffer.cpu;
 								lyon.partage[index].stockage = buffer.stockage;
-								lyon.partage[index].nom = buffer.nom;
-								realloc(lyon.partage, sizeof(lyon.partage) + sizeof(location));
+								*lyon.partage[index].nom = buffer.nom;
+								lyon.partage = realloc(lyon.partage, sizeof(lyon.partage) + sizeof(location));
 							}
 							break;
 						case PARIS:
 							if (paris.cpu > buffer.cpu && paris.stockage > buffer.stockage && mode == EXCLUSIF) {
-								int index = sizeof(paris.exclusif) / sizeof(location);
+								int index = (sizeof(*paris.exclusif) / sizeof(location)) - 1;
 								paris.exclusif[index].cpu = buffer.cpu;
 								paris.exclusif[index].stockage = buffer.stockage;
-								paris.exclusif[index].nom = buffer.nom;
+								*paris.exclusif[index].nom = buffer.nom;
 								paris.cpu -= buffer.cpu;
 								paris.stockage -= buffer.stockage;
-								realloc(paris.exclusif, sizeof(paris.exclusif) + sizeof(location));
+								paris.exclusif = realloc(paris.exclusif, sizeof(paris.exclusif) + sizeof(location));
 							} else if (mode == PARTAGE) {
-								int index = (sizeof(paris.partage) / sizeof(location)) - 1;
+								int index = (sizeof(*paris.partage) / sizeof(location)) - 1;
 								paris.partage[index].cpu = buffer.cpu;
 								paris.partage[index].stockage = buffer.stockage;
-								paris.partage[index].nom = buffer.nom;
-								realloc(paris.partage, sizeof(paris.partage) + sizeof(location));
+								*paris.partage[index].nom = buffer.nom;
+								paris.partage = realloc(paris.partage, sizeof(paris.partage) + sizeof(location));
 							}
 							break;
 						default:
 							break;
-						}
-					bzero(buffer, sizeof(buffer));
+					}
+					printf("%i", montpellier.cpu);
+					// memset(buffer, 0, sizeof(buffer));
 				}
 				break;
 

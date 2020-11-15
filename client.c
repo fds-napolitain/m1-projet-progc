@@ -60,11 +60,11 @@ int main(int argc, char** argv) {
 			exit(1);
 		}*/
 
-		if (recv(clientSocket, buffer, 1024, 0) < 0) {
+		/*if (recv(clientSocket, buffer, 1024, 0) < 0) {
 			printf("[-]Error in receiving data.\n");
 		} else {
 			printf("Server: \t%s\n", buffer);
-		}
+		}*/
 	}
 
 	return 0;

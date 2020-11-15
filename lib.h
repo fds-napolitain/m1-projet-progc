@@ -11,7 +11,7 @@
 typedef struct {
 	int cpu;
 	int stockage;
-	char* nom;
+	char nom[20];
 } location;
 
 // ressources pour un datacenter
