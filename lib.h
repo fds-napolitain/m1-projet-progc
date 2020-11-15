@@ -7,6 +7,13 @@
 #define LYON 1
 #define PARIS 2
 
+// structure pour envoyer une demande de location
+typedef struct {
+	int cpu;
+	int stockage;
+	char* nom;
+} location;
+
 // ressources pour un datacenter
 typedef struct {
 	int cpu;
@@ -21,10 +28,3 @@ typedef struct {
 	datacenter lyon;
 	datacenter paris; 
 } datacenters;
-
-// structure pour envoyer une demande de location
-typedef struct {
-	int cpu;
-	int stockage;
-	char* nom;
-} location;
