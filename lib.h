@@ -1,13 +1,18 @@
 #define PORT 4444
+
 #define EXCLUSIF 1
 #define PARTAGE 0
+
+#define MONTPELLIER 0
+#define LYON 1
+#define PARIS 2
 
 // ressources pour un datacenter
 typedef struct {
 	int cpu;
 	int stockage;
-	char** exclusif;
-	char** partage;
+	location* exclusif;
+	location* partage;
 } datacenter;
 
 // ressources pour tous les datacenters
@@ -22,5 +27,4 @@ typedef struct {
 	int cpu;
 	int stockage;
 	char* nom;
-	int mode;
 } location;

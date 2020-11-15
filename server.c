@@ -37,10 +37,16 @@ int main(int argc, char** argv) {
 	printf("L'adresse de la variable pere est : %p\n", cloud);
 	montpellier.cpu = 60;
 	montpellier.stockage = 700;
+	montpellier.exclusif = malloc(sizeof(location));
+	montpellier.partage = malloc(sizeof(location));
 	lyon.cpu = 64;
 	lyon.stockage = 2000;
+	lyon.exclusif = malloc(sizeof(location));
+	lyon.partage = malloc(sizeof(location));
 	paris.cpu = 10;
 	paris.stockage = 100;
+	paris.exclusif = malloc(sizeof(location));
+	paris.partage = malloc(sizeof(location));
 	cloud->montpellier = montpellier;
 	cloud->lyon = lyon;
 	cloud->paris = paris;
@@ -54,7 +60,7 @@ int main(int argc, char** argv) {
 
 	socklen_t addr_size;
 
-	datacenter buffer;
+	location buffer;
 	pid_t childpid;
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -98,17 +104,71 @@ int main(int argc, char** argv) {
 				printf("L'adresse de la variable fils est : %p\n", cloud);
 				close(sockfd);
 
-				// boucle temporaire de test
+				// traitement de la requete du client
 				while (1) {
-					recv(newSocket, &buffer, 1024, 0);
-					if (strcmp(buffer, ":exit") == 0) {
-						printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
-						break;
-					} else {
-						printf("Client: %s\n", buffer);
-						send(newSocket, buffer, strlen(buffer), 0);
-						bzero(buffer, sizeof(buffer));
-					}
+					int mode;
+					int localisation;
+					recv(newSocket, buffer.nom, sizeof(buffer.nom), 0);
+					recv(newSocket, buffer.cpu, sizeof(buffer.cpu), 0);
+					recv(newSocket, buffer.stockage, sizeof(buffer.stockage), 0);
+					recv(newSocket, mode, sizeof(mode), 0);
+					recv(newSocket, localisation, sizeof(localisation), 0);
+					switch (localisation) {
+						case MONTPELLIER:
+							if (montpellier.cpu > buffer.cpu && montpellier.stockage > buffer.stockage && mode == EXCLUSIF) {
+								int index = (sizeof(montpellier.exclusif) / sizeof(location)) - 1;
+								montpellier.exclusif[index].cpu = buffer.cpu;
+								montpellier.exclusif[index].stockage = buffer.stockage;
+								montpellier.exclusif[index].nom = buffer.nom;
+								montpellier.cpu -= buffer.cpu;
+								montpellier.stockage -= buffer.stockage;
+								realloc(montpellier.exclusif, sizeof(montpellier.exclusif) + sizeof(location));
+							} else if (mode == PARTAGE) {
+								int index = (sizeof(montpellier.partage) / sizeof(location)) - 1;
+								montpellier.partage[index].cpu = buffer.cpu;
+								montpellier.partage[index].stockage = buffer.stockage;
+								montpellier.partage[index].nom = buffer.nom;
+								realloc(montpellier.partage, sizeof(montpellier.partage) + sizeof(location));
+							}
+							break;
+						case LYON:
+							if (lyon.cpu > buffer.cpu && lyon.stockage > buffer.stockage && mode == EXCLUSIF) {
+								int index = sizeof(lyon.exclusif) / sizeof(location);
+								lyon.exclusif[index].cpu = buffer.cpu;
+								lyon.exclusif[index].stockage = buffer.stockage;
+								lyon.exclusif[index].nom = buffer.nom;
+								lyon.cpu -= buffer.cpu;
+								lyon.stockage -= buffer.stockage;
+								realloc(lyon.exclusif, sizeof(lyon.exclusif) + sizeof(location));
+							} else if (mode == PARTAGE) {
+								int index = (sizeof(lyon.partage) / sizeof(location)) - 1;
+								lyon.partage[index].cpu = buffer.cpu;
+								lyon.partage[index].stockage = buffer.stockage;
+								lyon.partage[index].nom = buffer.nom;
+								realloc(lyon.partage, sizeof(lyon.partage) + sizeof(location));
+							}
+							break;
+						case PARIS:
+							if (paris.cpu > buffer.cpu && paris.stockage > buffer.stockage && mode == EXCLUSIF) {
+								int index = sizeof(paris.exclusif) / sizeof(location);
+								paris.exclusif[index].cpu = buffer.cpu;
+								paris.exclusif[index].stockage = buffer.stockage;
+								paris.exclusif[index].nom = buffer.nom;
+								paris.cpu -= buffer.cpu;
+								paris.stockage -= buffer.stockage;
+								realloc(paris.exclusif, sizeof(paris.exclusif) + sizeof(location));
+							} else if (mode == PARTAGE) {
+								int index = (sizeof(paris.partage) / sizeof(location)) - 1;
+								paris.partage[index].cpu = buffer.cpu;
+								paris.partage[index].stockage = buffer.stockage;
+								paris.partage[index].nom = buffer.nom;
+								realloc(paris.partage, sizeof(paris.partage) + sizeof(location));
+							}
+							break;
+						default:
+							break;
+						}
+					bzero(buffer, sizeof(buffer));
 				}
 				break;
 

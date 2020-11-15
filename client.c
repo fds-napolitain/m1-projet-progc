@@ -14,9 +14,11 @@ int main(int argc, char** argv) {
 	int clientSocket, ret;
 	struct sockaddr_in serverAddr;
 	location buffer;
+	int localisation;
+	int mode;
 
 	clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if(clientSocket < 0){
+	if (clientSocket < 0) {
 		printf("[-]Error in connection.\n");
 		exit(1);
 	}
@@ -28,13 +30,13 @@ int main(int argc, char** argv) {
 	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	ret = connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
-	if(ret < 0){
+	if (ret < 0) {
 		printf("[-]Error in connection.\n");
 		exit(1);
 	}
 	printf("[+]Connected to Server.\n");
 
-	while(1){
+	while (1) {
 		printf("Client: ");
 		scanf("%s\n", buffer.nom);
 		printf("Cpu: ");
@@ -42,20 +44,25 @@ int main(int argc, char** argv) {
 		printf("Stockage: ");
 		scanf("%i\n", buffer.stockage);
 		printf("Mode: ");
-		scanf("%i\n", buffer.mode);
-		char* t = buffer;
+		scanf("%i\n", mode);
+		printf("Localisation: ");
+		scanf("%i\n", localisation);
 
-		send(clientSocket, buffer, sizeof(buffer), 0);
+		send(clientSocket, buffer.nom, sizeof(buffer.nom), 0);
+		send(clientSocket, buffer.cpu, sizeof(buffer.cpu), 0);
+		send(clientSocket, buffer.stockage, sizeof(buffer.stockage), 0);
+		send(clientSocket, mode, sizeof(mode), 0);
+		send(clientSocket, localisation, sizeof(localisation), 0);
 
-		/*if(strcmp(buffer, ":exit") == 0){
+		/*if(strcmp(buffer, ":exit") == s0){
 			close(clientSocket);
 			printf("[-]Disconnected from server.\n");
 			exit(1);
 		}*/
 
-		if(recv(clientSocket, buffer, 1024, 0) < 0){
+		if (recv(clientSocket, buffer, 1024, 0) < 0) {
 			printf("[-]Error in receiving data.\n");
-		}else{
+		} else {
 			printf("Server: \t%s\n", buffer);
 		}
 	}
