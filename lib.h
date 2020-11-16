@@ -28,3 +28,10 @@ typedef struct {
 	datacenter lyon;
 	datacenter paris; 
 } datacenters;
+
+// message reseau
+typedef struct {
+	location mylocation;
+	int mymode;
+	int mylocalisation;
+} networkmsgloc;

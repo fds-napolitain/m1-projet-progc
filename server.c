@@ -13,11 +13,23 @@
 #include "lib.h"
 
 int main(int argc, char** argv) {
+
+	if (argc != 2) {
+        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+        exit(1);
+    }
+	if ( atoi(argv[1])<1 || atoi(argv[1]) > 65535) {
+        fprintf(stderr, "port incorrect\n");
+        exit(1);
+	}
+	printf("Server prepare to bind on 127.0.0.1:%d\n", atoi(argv[1]));
+
 	// gestion du cloud
 	datacenter montpellier;
 	datacenter lyon;
 	datacenter paris;
 	datacenters* cloud;
+	networkmsgloc messageloc;
 
 	printf("Création de la clé d'accès IPC\n");
 	key_t key = ftok("server", 1);
@@ -72,7 +84,8 @@ int main(int argc, char** argv) {
 
 	memset(&serverAddr, '\0', sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(PORT);
+//	serverAddr.sin_port = htons(PORT);
+	serverAddr.sin_port = htons(atoi(argv[1]));
 	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	ret = bind(sockfd, (struct sockaddr*) &serverAddr, sizeof(serverAddr));
@@ -80,7 +93,8 @@ int main(int argc, char** argv) {
 		printf("[-]Error in binding.\n");
 		exit(1);
 	}
-	printf("[+]Bind to port %d\n", 4444);
+	//printf("[+]Bind to port %d\n", 4444);
+	printf("[+]Bind to port %d\n",atoi(argv[1]));
 
 	if (listen(sockfd, 10) == 0) {
 		printf("[+]Listening....\n");
@@ -103,16 +117,37 @@ int main(int argc, char** argv) {
 			case 0: // fils
 				printf("L'adresse de la variable fils est : %p\n", cloud);
 				close(sockfd);
-
+				int i=0;
 				// traitement de la requete du client
 				while (1) {
+					i++;
+					printf("itération %d-%d\n",getpid(),i);
 					int mode;
 					int localisation;
-					recv(newSocket, buffer.nom, sizeof(buffer.nom), 0);
+
+					if( recv( newSocket, &messageloc, sizeof(messageloc), 0) < 1 ) 
+						break ;
+/*
+					if (recv(newSocket, buffer.nom, sizeof(buffer.nom), 0) < 1) break;
 					recv(newSocket, buffer.cpu, sizeof(buffer.cpu), 0);
 					recv(newSocket, buffer.stockage, sizeof(buffer.stockage), 0);
 					recv(newSocket, mode, sizeof(mode), 0);
 					recv(newSocket, localisation, sizeof(localisation), 0);
+*/
+					strcpy( buffer.nom, messageloc.mylocation.nom);
+					buffer.cpu = messageloc.mylocation.cpu;
+					buffer.stockage = messageloc.mylocation.stockage;
+					mode = messageloc.mymode;
+					localisation = messageloc.mylocalisation;
+
+					printf("Client %d - Votre nom: %s\n", getpid(),buffer.nom);
+					printf("Client %d - Votre demande:\n", getpid());
+					printf("Client %d - * CPU: %d\n", getpid(), buffer.cpu);
+					printf("Client %d - * Stockage: %d\n", getpid(),buffer.stockage);
+					printf("Client %d - * mode:%d\n", getpid(),mode);
+					printf("Client %d - * localisation:%d\n", getpid(),localisation);
+
+
 					switch (localisation) {
 						case MONTPELLIER:
 							if (montpellier.cpu > buffer.cpu && montpellier.stockage > buffer.stockage && mode == EXCLUSIF) {
@@ -168,7 +203,7 @@ int main(int argc, char** argv) {
 						default:
 							break;
 					}
-					printf("%i", montpellier.cpu);
+					printf("montpellier.cpu:%d\n", montpellier.cpu);
 					// memset(buffer, 0, sizeof(buffer));
 				}
 				break;
