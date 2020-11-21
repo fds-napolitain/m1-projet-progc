@@ -1,7 +1,8 @@
-#define PORT 4444
+#define CPU 0
+#define STOCKAGE 1
 
-#define EXCLUSIF 1
 #define PARTAGE 0
+#define EXCLUSIF 1
 
 #define MONTPELLIER 0
 #define LYON 1

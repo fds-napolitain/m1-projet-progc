@@ -6,8 +6,22 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #include "lib.h"
+
+// fonction de notification
+void notification(int my_socket) {
+	char mon_buffer[128];
+	while (1) {
+		// je reçois l'état du système
+		if (recv(my_socket, mon_buffer, sizeof(mon_buffer), 0) < 1) {
+			break;	
+		} 
+
+		printf("Etat du système:'%s'\n", mon_buffer);
+	}
+}
 
 int main(int argc, char** argv) {
 
@@ -37,8 +51,6 @@ int main(int argc, char** argv) {
 
 	memset(&serverAddr, '\0', sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
-//	serverAddr.sin_port = htons(PORT);
-//	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	serverAddr.sin_port = htons(atoi(argv[2]));
 	serverAddr.sin_addr.s_addr = inet_addr(argv[1]);
 
@@ -49,6 +61,16 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	printf("[+]Connected to Server.\n");
+
+	// creation du thread de notification
+	pthread_t threadId;
+	int err = pthread_create(&threadId, NULL, &notification, clientSocket);
+	if (err) {
+		perror("pthread_create");
+		exit(1);
+	} 
+	printf("thread de notification créé\n");
+
 
 	while (1) {
 
@@ -74,7 +96,7 @@ int main(int argc, char** argv) {
 		printf("* mode:%d\n",mode);
 		printf("* localisation:%d\n",localisation);
 
-		// flush input
+		// corriger scanf
 		int c; while ((c = getchar()) != '\n' && c != EOF) { }
 
 		messageloc.mylocalisation = localisation;
@@ -83,29 +105,10 @@ int main(int argc, char** argv) {
 		strcpy(messageloc.mylocation.nom , buffer.nom);
 		messageloc.mylocation.stockage = buffer.stockage;
 	
-		if(send(clientSocket, &messageloc, sizeof(messageloc),0) <0) {
+		if(send(clientSocket, &messageloc, sizeof(messageloc),0) < 0) {
 			perror("send client");
 			break ;
 		}
- 
-		/*
-		send(clientSocket, buffer.nom, sizeof(buffer.nom), 0);
-		send(clientSocket, buffer.cpu, sizeof(buffer.cpu), 0);
-		send(clientSocket, buffer.stockage, sizeof(buffer.stockage), 0);
-		send(clientSocket, mode, sizeof(mode), 0);
-		send(clientSocket, localisation, sizeof(localisation), 0);
-		*/
-		/*if(strcmp(buffer, ":exit") == s0){
-			close(clientSocket);
-			printf("[-]Disconnected from server.\n");
-			exit(1);
-		}*/
-
-		/*if (recv(clientSocket, buffer, 1024, 0) < 0) {
-			printf("[-]Error in receiving data.\n");
-		} else {
-			printf("Server: \t%s\n", buffer);
-		}*/
 
 	}
 
