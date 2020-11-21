@@ -10,6 +10,9 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+#include <stdint.h>
+#include <inttypes.h>
+
 #include "lib.h"
 
 int main(int argc, char** argv) {
@@ -43,7 +46,7 @@ int main(int argc, char** argv) {
 
 	printf("Initialisation de la variable partagée\n");
 	cloud = shmat(sh_id, 0, 0);
-	if ((int) cloud == -1) {
+	if ((uintptr_t) cloud == -1) {
 		perror("shmat");
 	}
 	printf("L'adresse de la variable pere est : %p\n", cloud);
