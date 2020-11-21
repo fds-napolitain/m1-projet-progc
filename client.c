@@ -12,14 +12,39 @@
 
 // fonction de notification
 void notification(int my_socket) {
-	char mon_buffer[128];
+	datacenters mon_buffer;
 	while (1) {
 		// je reçois l'état du système
-		if (recv(my_socket, mon_buffer, sizeof(mon_buffer), 0) < 1) {
+		if (recv(my_socket, &mon_buffer, sizeof(mon_buffer), 0) < 1) {
 			break;	
-		} 
-
-		printf("Etat du système:'%s'\n", mon_buffer);
+		}
+		printf("Montpellier:\n");
+		printf("|- cpu: %s\n", mon_buffer.montpellier.cpu);
+		printf("|- stockage: %s\n", mon_buffer.montpellier.stockage);
+		printf("|- exclusif: \n");
+		for (int i = 0; i < sizeof(mon_buffer.montpellier.exclusif)/sizeof(location); i++) {
+			printf("   |- nom: %s\n", mon_buffer.montpellier.exclusif->nom);
+			printf("   |- cpu: %s\n", mon_buffer.montpellier.exclusif->cpu);
+			printf("   |- stockage: %s\n", mon_buffer.montpellier.exclusif->stockage);
+		}
+		printf("Lyon:\n");
+		printf("|- cpu: %s\n", mon_buffer.lyon.cpu);
+		printf("|- stockage: %s\n", mon_buffer.lyon.stockage);
+		printf("|- exclusif: \n");
+		for (int i = 0; i < sizeof(mon_buffer.lyon.exclusif)/sizeof(location); i++) {
+			printf("   |- nom: %s\n", mon_buffer.lyon.exclusif->nom);
+			printf("   |- cpu: %s\n", mon_buffer.lyon.exclusif->cpu);
+			printf("   |- stockage: %s\n", mon_buffer.lyon.exclusif->stockage);
+		}
+		printf("Paris:\n");
+		printf("|- cpu: %s\n", mon_buffer.paris.cpu);
+		printf("|- stockage: %s\n", mon_buffer.paris.stockage);
+		printf("|- exclusif: \n");
+		for (int i = 0; i < sizeof(mon_buffer.paris.exclusif)/sizeof(location); i++) {
+			printf("   |- nom: %s\n", mon_buffer.paris.exclusif->nom);
+			printf("   |- cpu: %s\n", mon_buffer.paris.exclusif->cpu);
+			printf("   |- stockage: %s\n", mon_buffer.paris.exclusif->stockage);
+		}
 	}
 }
 
@@ -73,7 +98,6 @@ int main(int argc, char** argv) {
 
 
 	while (1) {
-
 		printf("\nClient: ");
 		scanf("%[^\n]s", buffer.nom);
 
@@ -89,12 +113,12 @@ int main(int argc, char** argv) {
 		printf("Localisation: ");
 		scanf("%d", &localisation);
 
-		printf("Votre nom: %s\n", buffer.nom);
 		printf("Votre demande:\n");
+		printf("* Nom: %s\n", buffer.nom);
 		printf("* CPU: %d\n", buffer.cpu);
-		printf("* Stockage: %d\n",buffer.stockage);
-		printf("* mode:%d\n",mode);
-		printf("* localisation:%d\n",localisation);
+		printf("* Stockage: %d\n", buffer.stockage);
+		printf("* mode:%d\n", mode);
+		printf("* localisation:%d\n", localisation);
 
 		// corriger scanf
 		int c; while ((c = getchar()) != '\n' && c != EOF) { }
@@ -109,7 +133,6 @@ int main(int argc, char** argv) {
 			perror("send client");
 			break ;
 		}
-
 	}
 
 	return 0;

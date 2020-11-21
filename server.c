@@ -20,20 +20,16 @@ pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 void notification(int my_socket) {
-	char mon_buffer[] = "Hello world !";
-
 	while (1) {
 		pthread_mutex_lock(&t_mutex);
 		pthread_cond_wait(&t_cond, &t_mutex);
 		pthread_mutex_unlock(&t_mutex);
 
 		printf("Je pousse la notification au client %d !\n",getpid());
-		if(send(my_socket, mon_buffer, sizeof(mon_buffer), 0) < 0) {
+		if (send(my_socket, &datacenters, sizeof(datacenters), 0) < 0) {
 			perror("send client");
 			break ;
 		}
-
-
 	}
 }
 
@@ -73,7 +69,7 @@ int main(int argc, char** argv) {
 	datacenter montpellier;
 	datacenter lyon;
 	datacenter paris;
-	datacenters* cloud;
+	datacenters cloud;
 	networkmsgloc messageloc;
 
 	printf("Création de la clé d'accès IPC\n");
@@ -104,9 +100,9 @@ int main(int argc, char** argv) {
 	paris.stockage = 100;
 	paris.exclusif = malloc(sizeof(location));
 	paris.partage = malloc(sizeof(location));
-	cloud->montpellier = montpellier;
-	cloud->lyon = lyon;
-	cloud->paris = paris;
+	cloud.montpellier = montpellier;
+	cloud.lyon = lyon;
+	cloud.paris = paris;
 	
 	// gestion des sockets
 	int sockfd, ret;
