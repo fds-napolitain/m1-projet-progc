@@ -1,3 +1,10 @@
 server
 client
 settings.json
+.DS_Store
+ppcr.xcodeproj/project.pbxproj
+ppcr.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+ppcr.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+ppcr.xcodeproj/project.xcworkspace/xcuserdata/napolitain.xcuserdatad/UserInterfaceState.xcuserstate
+ppcr.xcodeproj/xcshareddata/xcschemes/ppcr.xcscheme
+ppcr.xcodeproj/xcuserdata/napolitain.xcuserdatad/xcschemes/xcschememanagement.plist
