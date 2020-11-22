@@ -12,13 +12,16 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "lib.h"
+
+// verrou mise à jour du système
+pthread_mutex_t cloud_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // fonction de notification
 pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
-
 void notification(int my_socket) {
 	datacenters* cloud;
 	key_t key = ftok("server", 1);
@@ -69,12 +72,12 @@ int fnlocation(location* d, int MODE) {
 	int n = 0;
 	switch (MODE) {
 		case CPU:
-			for (int i = 0; i < sizeof(d)/sizeof(location); i++) {
+			for (int i = 0; i < sizeof(*d)/sizeof(location); i++) {
 				n += d[i].cpu;
 			}
 			break;
 		default:
-			for (int i = 0; i < sizeof(d)/sizeof(location); i++) {
+			for (int i = 0; i < sizeof(*d)/sizeof(location); i++) {
 				n += d[i].stockage;
 			}
 			break;
@@ -183,6 +186,11 @@ int main(int argc, char** argv) {
 			exit(1);
 		}
 		printf("Connection acceptée de %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+		printf("Je pousse l'état du système au socket %d !\n",newSocket);
+		if (send(newSocket, cloud, sizeof(datacenters), 0) < 0) {
+			perror("send client");
+			break ;
+		}
 
 		// creation du thread de notification à chaque connection de client
 		pthread_t threadId;
@@ -243,12 +251,21 @@ int main(int argc, char** argv) {
 						case MONTPELLIER:
 							if (montpellier.cpu >= buffer.cpu && montpellier.stockage >= buffer.stockage && mode == EXCLUSIF) {
 								int index = (sizeof(*montpellier.exclusif) / sizeof(location)) - 1;
+
+								printf("DEBUG MPL EXCL: index=%i\n",index);
+								printf("DEBUG MPL EXCL: sizeof location=%i\n",sizeof(location));
+								printf("DEBUG MPL EXCL: sizeof montpellier.exclusif=%i\n",sizeof(montpellier.exclusif));
+
 								montpellier.exclusif[index].cpu = buffer.cpu;
 								montpellier.exclusif[index].stockage = buffer.stockage;
 								*montpellier.exclusif[index].nom = buffer.nom;
 								montpellier.cpu -= buffer.cpu;
 								montpellier.stockage -= buffer.stockage;
-								montpellier.exclusif = realloc(montpellier.exclusif, sizeof(montpellier.exclusif) + sizeof(location));
+								montpellier.exclusif = (location *) realloc(montpellier.exclusif, sizeof(montpellier.exclusif) + sizeof(location));
+
+								printf("DEBUG MPL EXCL: sizeof montpellier.exclusif APRES=%i\n",sizeof(*montpellier.exclusif));
+								printf("DEBUG MPL EXCL: new index=%i\n", sizeof(*montpellier.exclusif) / sizeof(location) - 1);
+
 							} else if (fnlocation(montpellier.partage, CPU) + montpellier.cpu >= buffer.cpu && mode == PARTAGE) {
 								int index = (sizeof(*montpellier.partage) / sizeof(location)) - 1;
 								montpellier.partage[index].cpu = fnlocation(montpellier.partage, CPU) - buffer.cpu;
@@ -265,7 +282,7 @@ int main(int argc, char** argv) {
 								*lyon.exclusif[index].nom = buffer.nom;
 								lyon.cpu -= buffer.cpu;
 								lyon.stockage -= buffer.stockage;
-								lyon.exclusif = realloc(lyon.exclusif, sizeof(lyon.exclusif) + sizeof(location));
+								lyon.exclusif = realloc(lyon.exclusif, sizeof(*lyon.exclusif) + sizeof(location));
 							} else if (fnlocation(lyon.partage, CPU) + lyon.cpu >= buffer.cpu && mode == PARTAGE) {
 								int index = (sizeof(*lyon.partage) / sizeof(location)) - 1;
 								lyon.partage[index].cpu = fnlocation(lyon.partage, CPU) - buffer.cpu;
@@ -282,7 +299,7 @@ int main(int argc, char** argv) {
 								*paris.exclusif[index].nom = buffer.nom;
 								paris.cpu -= buffer.cpu;
 								paris.stockage -= buffer.stockage;
-								paris.exclusif = realloc(paris.exclusif, sizeof(paris.exclusif) + sizeof(location));
+								paris.exclusif = realloc(paris.exclusif, sizeof(*paris.exclusif) + sizeof(location));
 							} else if (fnlocation(paris.partage, CPU) + paris.cpu >= buffer.cpu && mode == PARTAGE) {
 								int index = (sizeof(*paris.partage) / sizeof(location)) - 1;
 								paris.partage[index].cpu = fnlocation(paris.partage, CPU) - buffer.cpu;
