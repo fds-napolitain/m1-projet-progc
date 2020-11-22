@@ -18,33 +18,35 @@ void notification(int my_socket) {
 		if (recv(my_socket, &mon_buffer, sizeof(mon_buffer), 0) < 1) {
 			break;	
 		}
+		printf("\n*** ETAT DU SYSTEME ***\n");
 		printf("Montpellier:\n");
-		printf("|- cpu: %s\n", mon_buffer.montpellier.cpu);
-		printf("|- stockage: %s\n", mon_buffer.montpellier.stockage);
+		printf("|- cpu: %d\n", mon_buffer.montpellier.cpu);
+		printf("|- stockage: %d\n", mon_buffer.montpellier.stockage);
 		printf("|- exclusif: \n");
 		for (int i = 0; i < sizeof(mon_buffer.montpellier.exclusif)/sizeof(location); i++) {
 			printf("   |- nom: %s\n", mon_buffer.montpellier.exclusif->nom);
-			printf("   |- cpu: %s\n", mon_buffer.montpellier.exclusif->cpu);
-			printf("   |- stockage: %s\n", mon_buffer.montpellier.exclusif->stockage);
+			printf("   |- cpu: %d\n", mon_buffer.montpellier.exclusif->cpu);
+			printf("   |- stockage: %d\n", mon_buffer.montpellier.exclusif->stockage);
 		}
 		printf("Lyon:\n");
-		printf("|- cpu: %s\n", mon_buffer.lyon.cpu);
-		printf("|- stockage: %s\n", mon_buffer.lyon.stockage);
+		printf("|- cpu: %d\n", mon_buffer.lyon.cpu);
+		printf("|- stockage: %d\n", mon_buffer.lyon.stockage);
 		printf("|- exclusif: \n");
 		for (int i = 0; i < sizeof(mon_buffer.lyon.exclusif)/sizeof(location); i++) {
 			printf("   |- nom: %s\n", mon_buffer.lyon.exclusif->nom);
-			printf("   |- cpu: %s\n", mon_buffer.lyon.exclusif->cpu);
-			printf("   |- stockage: %s\n", mon_buffer.lyon.exclusif->stockage);
+			printf("   |- cpu: %d\n", mon_buffer.lyon.exclusif->cpu);
+			printf("   |- stockage: %d\n", mon_buffer.lyon.exclusif->stockage);
 		}
 		printf("Paris:\n");
-		printf("|- cpu: %s\n", mon_buffer.paris.cpu);
-		printf("|- stockage: %s\n", mon_buffer.paris.stockage);
+		printf("|- cpu: %d\n", mon_buffer.paris.cpu);
+		printf("|- stockage: %d\n", mon_buffer.paris.stockage);
 		printf("|- exclusif: \n");
 		for (int i = 0; i < sizeof(mon_buffer.paris.exclusif)/sizeof(location); i++) {
 			printf("   |- nom: %s\n", mon_buffer.paris.exclusif->nom);
-			printf("   |- cpu: %s\n", mon_buffer.paris.exclusif->cpu);
-			printf("   |- stockage: %s\n", mon_buffer.paris.exclusif->stockage);
+			printf("   |- cpu: %d\n", mon_buffer.paris.exclusif->cpu);
+			printf("   |- stockage: %d\n", mon_buffer.paris.exclusif->stockage);
 		}
+		printf("*** FIN DE NOTIFICATION ***\n");
 	}
 }
 
@@ -58,7 +60,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "port incorrect\n");
         exit(1);
 	}
-	printf("Prepare to connect to %s:%d\n", argv[1],atoi(argv[2]));
+	printf("Préparation de la connexion à %s:%d\n", argv[1],atoi(argv[2]));
 
 	int clientSocket, ret;
 	struct sockaddr_in serverAddr;
@@ -69,23 +71,23 @@ int main(int argc, char** argv) {
 
 	clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (clientSocket < 0) {
-		printf("[-]Error in connection.\n");
+		perror("[-]Erreur de connexion.\n");
 		exit(1);
 	}
-	printf("[+]Client Socket is created.\n");
+	printf("[+]Socket client créée.\n");
 
 	memset(&serverAddr, '\0', sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(atoi(argv[2]));
 	serverAddr.sin_addr.s_addr = inet_addr(argv[1]);
 
-	printf("[+]Client trying to connect...\n");
+	printf("[+]Tentative de connexion du client...\n");
 	ret = connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
 	if (ret < 0) {
-		printf("[-]Error in connection.\n");
+		perror("[-]Erreur de connexion.\n");
 		exit(1);
 	}
-	printf("[+]Connected to Server.\n");
+	printf("[+]Connecté au serveur.\n");
 
 	// creation du thread de notification
 	pthread_t threadId;
@@ -94,7 +96,7 @@ int main(int argc, char** argv) {
 		perror("pthread_create");
 		exit(1);
 	} 
-	printf("thread de notification créé\n");
+	printf("thread de notification créé.\n");
 
 
 	while (1) {

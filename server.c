@@ -20,17 +20,46 @@ pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 void notification(int my_socket) {
-	while (1) {
-		pthread_mutex_lock(&t_mutex);
-		pthread_cond_wait(&t_cond, &t_mutex);
-		pthread_mutex_unlock(&t_mutex);
+	datacenters* cloud;
+	key_t key = ftok("server", 1);
 
-		printf("Je pousse la notification au client %d !\n",getpid());
-		if (send(my_socket, &datacenters, sizeof(datacenters), 0) < 0) {
+	int sh_id = shmget(key, sizeof(datacenters), 0666);
+	if (sh_id == -1) {
+		perror("notif, shmget");
+		exit(-1);
+	}
+
+	cloud = shmat(sh_id, 0, 0);
+	if ((uintptr_t) cloud == -1) {
+		perror("notif, shmat");
+		exit(-1);
+	}
+
+	while (1) {
+
+		pthread_mutex_lock(&t_mutex);
+
+		pthread_cond_wait(&t_cond, &t_mutex);
+
+		printf("Je pousse la notification au socket %d !\n",my_socket);
+
+		if (send(my_socket, cloud, sizeof(datacenters), 0) < 0) {
 			perror("send client");
 			break ;
 		}
+
+		pthread_mutex_unlock(&t_mutex);
+
 	}
+}
+
+// fonction de reveil du pere
+void reveil(int signum)
+{
+	// le pere est reveillé, il reveille tout les threads de notifications
+	pthread_mutex_lock(&t_mutex);
+	pthread_cond_broadcast(&t_cond);
+	pthread_mutex_unlock(&t_mutex);
 }
 
 /**
@@ -63,13 +92,13 @@ int main(int argc, char** argv) {
         fprintf(stderr, "port incorrect\n");
         exit(1);
 	}
-	printf("Server prepare to bind on 127.0.0.1:%d\n", atoi(argv[1]));
+	printf("Le serveur va exposer le port 127.0.0.1:%d\n", atoi(argv[1]));
 
 	// gestion du cloud
 	datacenter montpellier;
 	datacenter lyon;
 	datacenter paris;
-	datacenters cloud;
+	datacenters* cloud;
 	networkmsgloc messageloc;
 
 	printf("Création de la clé d'accès IPC\n");
@@ -86,6 +115,7 @@ int main(int argc, char** argv) {
 	cloud = shmat(sh_id, 0, 0);
 	if ((uintptr_t) cloud == -1) {
 		perror("shmat");
+		exit(-1);
 	}
 	printf("L'adresse de la variable pere est : %p\n", cloud);
 	montpellier.cpu = 60;
@@ -100,9 +130,9 @@ int main(int argc, char** argv) {
 	paris.stockage = 100;
 	paris.exclusif = malloc(sizeof(location));
 	paris.partage = malloc(sizeof(location));
-	cloud.montpellier = montpellier;
-	cloud.lyon = lyon;
-	cloud.paris = paris;
+	cloud->montpellier = montpellier;
+	cloud->lyon = lyon;
+	cloud->paris = paris;
 	
 	// gestion des sockets
 	int sockfd, ret;
@@ -118,30 +148,33 @@ int main(int argc, char** argv) {
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		printf("[-]Error in connection.\n");
+		perror("[-]Erreur de connexion.\n");
 		exit(1);
 	}
-	printf("[+]Server Socket is created.\n");
+	printf("[+]Socket serveur créé.\n");
 
 	memset(&serverAddr, '\0', sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
-	//	serverAddr.sin_port = htons(PORT);
 	serverAddr.sin_port = htons(atoi(argv[1]));
 	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	ret = bind(sockfd, (struct sockaddr*) &serverAddr, sizeof(serverAddr));
 	if (ret < 0) {
-		printf("[-]Error in binding.\n");
+		perror("[-]Erreur de bind.\
+		n");
 		exit(1);
 	}
-	//printf("[+]Bind to port %d\n", 4444);
-	printf("[+]Bind to port %d\n",atoi(argv[1]));
+	printf("[+]Bind du port %d\n",atoi(argv[1]));
 
 	if (listen(sockfd, 10) == 0) {
-		printf("[+]Listening....\n");
+		printf("[+]En écoute....\n");
  	} else {
-		printf("[-]Error in binding.\n");
+		perror("[-]Erreur de bind.\n");
+		exit(1);
 	}
+
+	// le père va réagir au signal SIGUSR2 en appelant la fonction reveil() qui elle même réveillera les threads de notification
+	signal(SIGUSR2, reveil);
 
 	// boucle d'écoute des clients
 	while (1) {
@@ -149,7 +182,16 @@ int main(int argc, char** argv) {
 		if(newSocket < 0){
 			exit(1);
 		}
-		printf("Connection accepted from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+		printf("Connection acceptée de %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+
+		// creation du thread de notification à chaque connection de client
+		pthread_t threadId;
+		int err = pthread_create(&threadId, NULL, &notification, newSocket);
+		if (err) {
+			perror("pthread_create");
+			exit(1);
+		} 
+		printf("thread de notification créé pour le socket %d\n", newSocket);
 	
 		switch (fork())	{
 			case -1: // erreur
@@ -158,16 +200,6 @@ int main(int argc, char** argv) {
 			case 0: // fils
 				printf("L'adresse de la variable fils est : %p\n", cloud);
 				close(sockfd);
-
-				// creation du thread de notification
-				pthread_t threadId;
-				int err = pthread_create(&threadId, NULL, &notification, newSocket);
-				if (err) {
-					perror("pthread_create");
-					exit(1);
-				} 
-				printf("thread de notification créé pour le client %d\n", getpid());
-
 
 				int i = 0;
 				// traitement de la requete du client
@@ -194,7 +226,12 @@ int main(int argc, char** argv) {
 					printf("Client %d - * localisation:%d\n", getpid(),localisation);
 
 					// reveil des threads de notification de tous les fils
-					pthread_cond_broadcast(&t_cond);
+					// on réveille d'abord le père
+					if (kill(getppid(), SIGUSR2) == -1) {
+						/* En cas d'erreur... */
+						perror("kill(2)\n");
+						exit(1);
+					}
 
 					/**
 					 * On choisit le datacenter puis
@@ -257,8 +294,7 @@ int main(int argc, char** argv) {
 						default:
 							break;
 					}
-					printf("montpellier.cpu:%d\n", montpellier.cpu);
-					// memset(buffer, 0, sizeof(buffer));
+					printf("Requête traitée par le serveur.\n");
 				}
 				break;
 
