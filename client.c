@@ -10,59 +10,61 @@
 
 #include "lib.h"
 
-// fonction de notification
+// pour mémoriser et rappeler le dernier message
+char lastmessage[80];
+
+// fonction pour gérer l'affichage de lastmessage
+void myprintf(char* msg) {
+	strcpy(lastmessage, msg);
+	printf("%s", lastmessage);
+}
+// remet à blanc le dernier message
+void resetprintf() {
+	memset( lastmessage, 0, sizeof(lastmessage));
+}
+
+// fonction de notification 
 void notification(int my_socket) {
-	datacenters mon_buffer;
+	cloudstate * mon_buffer;
 	while (1) {
 		// je reçois l'état du système
-		if (recv(my_socket, &mon_buffer, sizeof(mon_buffer), 0) < 1) {
+		if (recv(my_socket, mon_buffer, sizeof(cloudstate), 0) < 1) {
 			break;	
 		}
-		printf("\n*** ETAT DU SYSTEME ***\n");
-		printf("Montpellier:\n");
-		printf("|- cpu: %d\n", mon_buffer.montpellier.cpu);
-		printf("|- stockage: %d\n", mon_buffer.montpellier.stockage);
-		printf("|- exclusif: \n");
-		for (int i = 0; i < sizeof(mon_buffer.montpellier.exclusif)/sizeof(location); i++) {
-			printf("   |- nom: %s\n", mon_buffer.montpellier.exclusif->nom);
-			printf("   |- cpu: %d\n", mon_buffer.montpellier.exclusif->cpu);
-			printf("   |- stockage: %d\n", mon_buffer.montpellier.exclusif->stockage);
-		}
-		printf("Lyon:\n");
-		printf("|- cpu: %d\n", mon_buffer.lyon.cpu);
-		printf("|- stockage: %d\n", mon_buffer.lyon.stockage);
-		printf("|- exclusif: \n");
-		for (int i = 0; i < sizeof(mon_buffer.lyon.exclusif)/sizeof(location); i++) {
-			printf("   |- nom: %s\n", mon_buffer.lyon.exclusif->nom);
-			printf("   |- cpu: %d\n", mon_buffer.lyon.exclusif->cpu);
-			printf("   |- stockage: %d\n", mon_buffer.lyon.exclusif->stockage);
-		}
-		printf("Paris:\n");
-		printf("|- cpu: %d\n", mon_buffer.paris.cpu);
-		printf("|- stockage: %d\n", mon_buffer.paris.stockage);
-		printf("|- exclusif: \n");
-		for (int i = 0; i < sizeof(mon_buffer.paris.exclusif)/sizeof(location); i++) {
-			printf("   |- nom: %s\n", mon_buffer.paris.exclusif->nom);
-			printf("   |- cpu: %d\n", mon_buffer.paris.exclusif->cpu);
-			printf("   |- stockage: %d\n", mon_buffer.paris.exclusif->stockage);
-		}
+		printf("\n*** ETAT DU SYSTEME (actuel /max) ***\n");
+		printf("0.Montpellier:\n");
+		printf("|- cpu: %d /%d\n", mon_buffer->ressources[MONTPELLIER][CPU],mon_buffer->maxressources[MONTPELLIER][CPU]);
+		printf("|- stockage: %d /%d\n", mon_buffer->ressources[MONTPELLIER][STOCKAGE],mon_buffer->maxressources[MONTPELLIER][STOCKAGE]);
+		printf("1.Lyon:\n");
+		printf("|- cpu: %d /%d\n", mon_buffer->ressources[LYON][CPU], mon_buffer->maxressources[LYON][CPU]);
+		printf("|- stockage: %d /%d\n", mon_buffer->ressources[LYON][STOCKAGE],mon_buffer->maxressources[LYON][STOCKAGE] );
+		printf("2.Paris:\n");
+		printf("|- cpu: %d /%d\n", mon_buffer->ressources[PARIS][CPU],mon_buffer->maxressources[PARIS][CPU] );
+		printf("|- stockage: %d /%d\n", mon_buffer->ressources[PARIS][STOCKAGE],mon_buffer->maxressources[PARIS][STOCKAGE] );
 		printf("*** FIN DE NOTIFICATION ***\n");
+		// rappel du dernier message
+		printf("\n%s\n", lastmessage);
 	}
 }
 
 int main(int argc, char** argv) {
 
+	resetprintf();
+
 	if (argc != 3) {
         fprintf(stderr, "Usage: %s <ip> <port>\n", argv[0]);
         exit(1);
     }
-	if ( atoi(argv[2])<1 || atoi(argv[2]) > 65535) {
+	if ( atoi(argv[2])<1 || atoi(argv[2]) > 65534) {
         fprintf(stderr, "port incorrect\n");
         exit(1);
 	}
-	printf("Préparation de la connexion à %s:%d\n", argv[1],atoi(argv[2]));
+	int port1 = atoi(argv[2]);
+	int port2 = atoi(argv[2])+1;
 
-	int clientSocket, ret;
+	printf("Préparation de la connexion à %s:%d,%d\n", argv[1], port1, port2);
+
+	int clientSocket, clientSocketN, ret;
 	struct sockaddr_in serverAddr;
 	location buffer;
 	int localisation;
@@ -78,7 +80,7 @@ int main(int argc, char** argv) {
 
 	memset(&serverAddr, '\0', sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(atoi(argv[2]));
+	serverAddr.sin_port = htons(port1);
 	serverAddr.sin_addr.s_addr = inet_addr(argv[1]);
 
 	printf("[+]Tentative de connexion du client...\n");
@@ -89,40 +91,72 @@ int main(int argc, char** argv) {
 	}
 	printf("[+]Connecté au serveur.\n");
 
+	clientSocketN = socket(AF_INET, SOCK_STREAM, 0);
+	if (clientSocketN < 0) {
+		perror("[-]Notif: Erreur de connexion.\n");
+		exit(1);
+	}
+	printf("[+]Socket de notification du client créée.\n");
+
+	printf("[+]Tentative de connexion du client au serveur de notifications...\n");
+	serverAddr.sin_port = htons(port2);
+	ret = connect(clientSocketN, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+	if (ret < 0) {
+		perror("[-]Notif: Erreur de connexion.\n");
+		exit(1);
+	}
+	printf("[+]Connecté au serveur de notifications.\n");
+
+	// MESSAGE D'ACCEUIL
+	printf("\n**********************************************************\n");
+	printf("Prêt à recevoir les demandes.\n");
+	printf("Saisir des demandes positives pour prendre des ressources.\n");
+	printf("Saisir des demandes négatives pour libérer des ressources.\n");
+	printf("Les demandes nulles ne sont pas permises par le serveur.\n");
+//TODO
+	printf("NOTE:\n");
+	printf(" -  pour l'instant le mode partagé ou dédié n'est pas géré.)\n");
+	printf(" -  le nom de client est réservé à un usage future.\n");
+//END TODO
+	printf("**********************************************************\n");
+	printf("\n");
+
 	// creation du thread de notification
 	pthread_t threadId;
-	int err = pthread_create(&threadId, NULL, &notification, clientSocket);
+	int err = pthread_create(&threadId, NULL, &notification, clientSocketN);
 	if (err) {
 		perror("pthread_create");
 		exit(1);
 	} 
 	printf("thread de notification créé.\n");
-
+	printf("\n");
 
 	while (1) {
-		printf("\nClient: ");
+		printf("\n");
+		myprintf("Client: ");
 		scanf("%[^\n]s", buffer.nom);
 
-		printf("Cpu: ");
+		myprintf("Cpu: ");
 		scanf("%d", &buffer.cpu);
 
-		printf("Stockage: ");
+		myprintf("Stockage: ");
 		scanf("%d", &buffer.stockage);
 
-		printf("Mode: ");
+		myprintf("Mode (0=SHR, 1=DED): ");
 		scanf("%d", &mode);
 
-		printf("Localisation: ");
+		myprintf("Localisation (O=MPL,1=LYO,2=PAR): ");
 		scanf("%d", &localisation);
 
+		resetprintf();
 		printf("Votre demande:\n");
 		printf("* Nom: %s\n", buffer.nom);
 		printf("* CPU: %d\n", buffer.cpu);
 		printf("* Stockage: %d\n", buffer.stockage);
-		printf("* mode:%d\n", mode);
-		printf("* localisation:%d\n", localisation);
+		printf("* mode (0=SHR, 1=DED):%d\n", mode);
+		printf("* localisation (O=MPL,1=LYO,2=PAR):%d\n", localisation);
 
-		// corriger scanf
+		// corriger scanf (vide le buffer d'entrée)
 		int c; while ((c = getchar()) != '\n' && c != EOF) { }
 
 		messageloc.mylocalisation = localisation;
@@ -131,11 +165,29 @@ int main(int argc, char** argv) {
 		strcpy(messageloc.mylocation.nom , buffer.nom);
 		messageloc.mylocation.stockage = buffer.stockage;
 	
+		// envoi de la demande
 		if(send(clientSocket, &messageloc, sizeof(messageloc),0) < 0) {
 			perror("send client");
 			break ;
 		}
-	}
+		myprintf("Demande envoyée, en attente de confirmation du serveur...\n");
 
+		// attente confirmation
+		// ce qui permet d'être bloqué si les ressources sont manquantes
+		memset(message, 0, sizeof(message));
+		if (recv(clientSocket, message, sizeof(message), 0) < 1) {
+			perror("receive confirmation");
+			break;	
+		}
+		if ( strcmp(message, "OK") != 0 ) {
+			myprintf("\n**** Une erreur dans votre demande !!! ****\n");
+			resetprintf();
+			printf("**** Erreur:%s\n\n", message);
+		} else {
+			myprintf("\nConfirmation reçue du serveur.\n");
+			resetprintf();
+		}
+	}
+ 
 	return 0;
 }
