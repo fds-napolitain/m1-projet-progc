@@ -33,7 +33,8 @@ pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 // fonction du thread de notification, pour notifier le thread de notif du client via le socket de notif
-void notification(int my_socket) {
+void notification(void* my_socket) {
+	int* _my_socket = (int*) my_socket;
 	cloudstate *lecloud;
 	key_t key = ftok("server", 2);
 
@@ -55,9 +56,9 @@ void notification(int my_socket) {
 
 		pthread_cond_wait(&t_cond, &t_mutex);
 
-		printf("Je pousse la notification au socket %d !\n",my_socket);
+		printf("Je pousse la notification au socket %d !\n", *_my_socket);
 
-		if (send(my_socket, lecloud, sizeof(cloudstate), 0) < 0) {
+		if (send(*_my_socket, lecloud, sizeof(cloudstate), 0) < 0) {
 			perror("send client");
 			break ;
 		}
@@ -298,7 +299,7 @@ int main(int argc, char** argv) {
 
 		// creation du thread de notification à chaque connection de client
 		pthread_t threadId;
-		int err = pthread_create(&threadId, NULL, &notification, newSocketN);
+		int err = pthread_create(&threadId, NULL, (void*) notification, &newSocketN);
 		if (err) {
 			perror("pthread_create");
 			exit(1);
