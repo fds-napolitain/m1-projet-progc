@@ -165,6 +165,12 @@ int main(int argc, char** argv) {
 		strcpy(messageloc.mylocation.nom , buffer.nom);
 		messageloc.mylocation.stockage = buffer.stockage;
 	
+		// --- Si mode = 0 (Shared)
+
+		
+
+		// --- Sinon si mode = 1 (Dédié)
+
 		// envoi de la demande
 		if(send(clientSocket, &messageloc, sizeof(messageloc),0) < 0) {
 			perror("send client");
@@ -187,6 +193,8 @@ int main(int argc, char** argv) {
 			myprintf("\nConfirmation reçue du serveur.\n");
 			resetprintf();
 		}
+
+
 	}
  
 	return 0;
