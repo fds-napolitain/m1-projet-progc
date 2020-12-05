@@ -33,8 +33,7 @@ pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 // fonction du thread de notification, pour notifier le thread de notif du client via le socket de notif
-void notification(void* my_socket) {
-	int* _my_socket = (int*) my_socket;
+void notification(int my_socket) {
 	cloudstate *lecloud;
 	key_t key = ftok("server", 2);
 
@@ -56,9 +55,9 @@ void notification(void* my_socket) {
 
 		pthread_cond_wait(&t_cond, &t_mutex);
 
-		printf("Je pousse la notification au socket %d !\n", *_my_socket);
+		printf("Je pousse la notification au socket %d !\n",my_socket);
 
-		if (send(*_my_socket, lecloud, sizeof(cloudstate), 0) < 0) {
+		if (send(my_socket, lecloud, sizeof(cloudstate), 0) < 0) {
 			perror("send client");
 			break ;
 		}
@@ -73,6 +72,26 @@ void notification(void* my_socket) {
 		printf("2.Paris:\n");
 		printf("|- cpu: %d /%d\n", lecloud->ressources[PARIS][CPU],lecloud->maxressources[PARIS][CPU] );
 		printf("|- stockage: %d /%d\n", lecloud->ressources[PARIS][STOCKAGE],lecloud->maxressources[PARIS][STOCKAGE] );
+		printf("3.Partagé\n");
+		printf("|- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
+		printf("|- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
+		printf("|- Lyon:\n");
+		printf("|- cpu: %d\n", lecloud->ressources_partagees[LYON][CPU]);
+		printf("|- stockage: %d\n", lecloud->ressources_partagees[LYON][STOCKAGE]);
+		printf("|- Paris:\n");
+		printf("|- cpu: %d\n", lecloud->ressources_partagees[PARIS][CPU]);
+		printf("|- stockage: %d\n", lecloud->ressources_partagees[PARIS][STOCKAGE]);
+		printf("4.Par personnes\n");
+		for (int i = 0; i < sizeof(lecloud->exclusif)/sizeof(location); i++) {
+			printf("|- %s\n", lecloud->exclusif[i].nom);
+			printf("|-- %s\n", lecloud->exclusif[i].cpu);
+			printf("|-- %s\n", lecloud->exclusif[i].stockage);
+		}
+		for (int i = 0; i < sizeof(lecloud->partage)/sizeof(location); i++) {
+			printf("|- %s\n", lecloud->partage[i].nom);
+			printf("|-- %s\n", lecloud->partage[i].cpu);
+			printf("|-- %s\n", lecloud->partage[i].stockage);
+		}
 		printf("*** FIN DE NOTIFICATION ***\n");
 		pthread_mutex_unlock(&t_mutex);
 
@@ -90,38 +109,89 @@ void reveil(int signum)
 }
 
 // positionnement de la valeur du verrou et de la ressource correspondant à la ressource ress sur le DC loc
-void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value ) {
+void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, int mode, char* nom) {
 	// index correspondant à PLACE sur 3, ITEMS sur 2
 	int index = loc * NB_ITEMS + ress ;
 	struct sembuf sb;
 	sb.sem_num = index;
-	sb.sem_op = -value; // si on en veut +N, il faut décrementer de N. 
 	sb.sem_flg = 0;
-	if(	mycloud->ressources[loc][ress] >= value) {
-		//printf("#DEBUG: ajout dans le semaphore %d à la position %d de la valeur %d\n", semid, index, -value );
-		if (semop(semid, &sb, 1) == -1) {
-			perror("semop setRessource");
-			exit(1); //BADABOUM, tant pis pour les mutex et sem...
+	if (mode == PARTAGE) {
+		value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
+	}
+	sb.sem_op = -value; // si on en veut +N, il faut décrementer de N. 
+	//printf("#DEBUG: ajout dans le semaphore %d à la position %d de la valeur %d\n", semid, index, -value );
+	if (semop(semid, &sb, 1) == -1) {
+		perror("semop setRessource");
+		exit(1); //BADABOUM, tant pis pour les mutex et sem...
+	} else {
+		// on a mis à jour le sem, alors on met à jour la variable partagée
+		pthread_mutex_lock(&cloud_mutex);
+		mycloud->ressources[loc][ress] -= value;
+		pthread_mutex_unlock(&cloud_mutex);
+	}
+
+	int existe = -1; // écrire à un emplacement existant (lié au nom)
+	int place_libre = -1; // écrire à un emplacement libre (suite ou emplacement libéré)
+	int i = 0;
+	if (mode == EXCLUSIF) {
+		int n = sizeof(mycloud->exclusif)/sizeof(location);
+		for (i = 0; i < n; i++) {
+			if (strcmp(mycloud->exclusif[i].nom, nom) == 0) {
+				existe = i;
+			}
+			if (mycloud->exclusif[i].cpu == 0 && mycloud->exclusif[i].stockage == 0) {
+				place_libre = i;
+			}
+		}
+		if (existe != -1) {
+			strcpy(mycloud->exclusif[existe].nom, nom);
+			if (ress == CPU) {
+				mycloud->exclusif[existe].cpu += value;
+			} else {
+				mycloud->exclusif[existe].stockage += value;
+			}
 		} else {
-			// on a mis à jour le sem, alors on met à jour la variable partagée
-			pthread_mutex_lock(&cloud_mutex);
-			mycloud->ressources[loc][ress]-= value;
-			pthread_mutex_unlock(&cloud_mutex);
+			if (place_libre != -1) {
+				i = place_libre;
+			}
+			if (ress == CPU) {
+				mycloud->exclusif[i].cpu += value;
+			} else {
+				mycloud->exclusif[i].stockage += value;
+			}
+			location* p = realloc(mycloud->exclusif, sizeof(mycloud->exclusif)+sizeof(location));
+			mycloud->exclusif = p;
 		}
 	} else {
-		// on n'a pas la place
-		// on va la demander
-		// on demande et on attends
-		//printf("#DEBUG: DEMANDE d'ajout dans le semaphore %d à la position %d de la valeur %d\n", semid, index, -value );
-		if (semop(semid, &sb, 1) == -1) {
-			perror("semop setRessource");
-			exit(1); //BADABOUM, tant pis pour les mutex et sem...
-		} else {
-			// on a mis à jour le sem, alors on met à jour la variable partagée
-			pthread_mutex_lock(&cloud_mutex);
-			mycloud->ressources[loc][ress]-= value;
-			pthread_mutex_unlock(&cloud_mutex);
+		int n = sizeof(mycloud->partage)/sizeof(location);
+		for (i = 0; i < n; i++) {
+			if (strcmp(mycloud->partage[i].nom, nom) == 0) {
+				existe = i;
+			}
+			if (mycloud->exclusif[i].cpu == 0 && mycloud->exclusif[i].stockage == 0) {
+				place_libre = i;
+			}
 		}
+		if (!existe) {
+			strcpy(mycloud->partage[existe].nom, nom);
+			if (ress == CPU) {
+				mycloud->partage[existe].cpu += value;
+			} else {
+				mycloud->partage[existe].stockage += value;
+			}
+		} else {
+			if (place_libre != -1) {
+				i = place_libre;
+			}
+			if (ress == CPU) {
+				mycloud->partage[i].cpu += value;
+			} else {
+				mycloud->partage[i].stockage += value;
+			}
+			location* p = realloc(mycloud->partage, sizeof(mycloud->partage)+sizeof(location));
+			mycloud->partage = p;
+		}
+		mycloud->ressources_partagees[loc][ress] += value;
 	}
 }
 
@@ -182,12 +252,12 @@ int main(int argc, char** argv) {
 	printf("L'id de la liste de semaphores est: %d\n", semid);
 
 	// init des limites
-	mycloud->maxressources[MONTPELLIER][CPU] = 60;
+	mycloud->maxressources[MONTPELLIER][CPU] = 		60;
 	mycloud->maxressources[MONTPELLIER][STOCKAGE] = 700;
-	mycloud->maxressources[LYON][CPU] = 60;
-	mycloud->maxressources[LYON][STOCKAGE] = 2000;
-	mycloud->maxressources[PARIS][CPU] = 10;
-	mycloud->maxressources[PARIS][STOCKAGE] = 100;
+	mycloud->maxressources[LYON][CPU] = 			60;
+	mycloud->maxressources[LYON][STOCKAGE] = 		2000;
+	mycloud->maxressources[PARIS][CPU] = 			10;
+	mycloud->maxressources[PARIS][STOCKAGE] = 		100;
 
 	// init de l'état
 	mycloud->ressources[MONTPELLIER][CPU] = 		mycloud->maxressources[MONTPELLIER][CPU];
@@ -196,14 +266,24 @@ int main(int argc, char** argv) {
 	mycloud->ressources[LYON][STOCKAGE] = 			mycloud->maxressources[LYON][STOCKAGE];
 	mycloud->ressources[PARIS][CPU] = 				mycloud->maxressources[PARIS][CPU];
 	mycloud->ressources[PARIS][STOCKAGE] = 			mycloud->maxressources[PARIS][STOCKAGE];
+	mycloud->exclusif = malloc(sizeof(location));
+	mycloud->partage = malloc(sizeof(location));
+
+	// init des ressources partagées
+	mycloud->ressources_partagees[MONTPELLIER][CPU] = 		0;
+	mycloud->ressources_partagees[MONTPELLIER][STOCKAGE] = 	0;
+	mycloud->ressources_partagees[LYON][CPU] = 				0;
+	mycloud->ressources_partagees[LYON][STOCKAGE] = 		0;
+	mycloud->ressources_partagees[PARIS][CPU] = 			0;
+	mycloud->ressources_partagees[PARIS][STOCKAGE] = 		0;
 
 	// init des verrous
-	initSem(semid, MONTPELLIER, CPU, 		mycloud->maxressources[MONTPELLIER][CPU] );
-	initSem(semid, MONTPELLIER, STOCKAGE, 	mycloud->maxressources[MONTPELLIER][STOCKAGE] );
-	initSem(semid, LYON, CPU, 				mycloud->maxressources[LYON][CPU] );
-	initSem(semid, LYON, STOCKAGE, 			mycloud->maxressources[LYON][STOCKAGE] );
-	initSem(semid, PARIS, CPU, 				mycloud->maxressources[PARIS][CPU] );
-	initSem(semid, PARIS, STOCKAGE, 		mycloud->maxressources[PARIS][STOCKAGE] );
+	initSem(semid, MONTPELLIER, CPU, 		mycloud->maxressources[MONTPELLIER][CPU]);
+	initSem(semid, MONTPELLIER, STOCKAGE, 	mycloud->maxressources[MONTPELLIER][STOCKAGE]);
+	initSem(semid, LYON, CPU, 				mycloud->maxressources[LYON][CPU]);
+	initSem(semid, LYON, STOCKAGE, 			mycloud->maxressources[LYON][STOCKAGE]);
+	initSem(semid, PARIS, CPU, 				mycloud->maxressources[PARIS][CPU]);
+	initSem(semid, PARIS, STOCKAGE, 		mycloud->maxressources[PARIS][STOCKAGE]);
 
 	location buffer;
 	pid_t childpid;
@@ -299,7 +379,7 @@ int main(int argc, char** argv) {
 
 		// creation du thread de notification à chaque connection de client
 		pthread_t threadId;
-		int err = pthread_create(&threadId, NULL, (void*) notification, &newSocketN);
+		int err = pthread_create(&threadId, NULL, &notification, newSocketN);
 		if (err) {
 			perror("pthread_create");
 			exit(1);
@@ -341,13 +421,15 @@ int main(int argc, char** argv) {
 					printf("Client %d - DEMANDE EN COURS...\n", getpid());
 
 					// check localisation
-					if ( localisation == MONTPELLIER || localisation == LYON || localisation == PARIS) {
+					if (localisation == MONTPELLIER || localisation == LYON || localisation == PARIS) {
 						// check limites
-						if( (abs(buffer.cpu) >0 ) && (abs(buffer.stockage) > 0) && (abs(buffer.cpu) <= mycloud->maxressources[localisation][CPU]) && (abs(buffer.stockage) <= mycloud->maxressources[localisation][STOCKAGE]) ) {
+						if ((abs(buffer.cpu) > 0 ) && (abs(buffer.stockage) > 0) &&
+						   (abs(buffer.cpu) <= mycloud->maxressources[localisation][CPU]) && 
+						   (abs(buffer.stockage) <= mycloud->maxressources[localisation][STOCKAGE])) {
 							// demande de ressources
 							// l'une ou l'autre peut nous mettre en attente
-							setRessource(semid, mycloud, localisation, CPU, buffer.cpu );
-							setRessource(semid, mycloud, localisation, STOCKAGE, buffer.stockage );
+							setRessource(semid, mycloud, localisation, CPU, buffer.cpu, mode, buffer.nom);
+							setRessource(semid, mycloud, localisation, STOCKAGE, buffer.stockage, mode, buffer.nom);
 							strcpy(message, "OK");
 						} else {
 							strcpy(message, "DEMANDE HORS LIMITES !");

@@ -164,12 +164,6 @@ int main(int argc, char** argv) {
 		messageloc.mylocation.cpu = buffer.cpu;
 		strcpy(messageloc.mylocation.nom , buffer.nom);
 		messageloc.mylocation.stockage = buffer.stockage;
-	
-		// --- Si mode = 0 (Shared)
-
-		
-
-		// --- Sinon si mode = 1 (Dédié)
 
 		// envoi de la demande
 		if(send(clientSocket, &messageloc, sizeof(messageloc),0) < 0) {
