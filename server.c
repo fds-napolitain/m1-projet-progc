@@ -58,6 +58,8 @@ void buildNotif(char* strnotif, cloudstate *lecloud){
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"3.Partagé\n");
 	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- Montpellier:\n");
+	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"|- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"|- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
@@ -157,7 +159,17 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 	sb.sem_num = index;
 	sb.sem_flg = 0;
 	if (mode == PARTAGE) {
-		value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
+		if (value > 0) {
+			value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
+		} else if (value < 0) {
+			int v = 0;
+			for (int i = 0; i < sizeof(mycloud->partage)/sizeof(location); i++) {
+				if (ress == CPU && strcmp(mycloud->partage[i].nom, nom) != 0) {
+					v += mycloud->partage[i].cpu;
+				}
+			}
+			value = mycloud->ressources_partagees[loc][ress] - v;
+		}
 	}
 	if (value != 0) {
 		sb.sem_op = -value; // si on en veut +N, il faut décrementer de N. 
