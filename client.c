@@ -25,23 +25,21 @@ void resetprintf() {
 
 // fonction de notification 
 void notification(int my_socket) {
-	cloudstate * mon_buffer;
+	char strnotif[LNG_NOTIF];
+
+	int ret =0;
+	printf("en attente de notif sur le socket %d\n",my_socket);
 	while (1) {
 		// je reçois l'état du système
-		if (recv(my_socket, mon_buffer, sizeof(cloudstate), 0) < 1) {
+		ret=recv(my_socket, strnotif, sizeof(strnotif), 0);
+		if (ret < 1) {
+			printf("error de receive de notif !!! %d\n", ret);
+			perror("error notif");
 			break;	
 		}
-		printf("\n*** ETAT DU SYSTEME (actuel /max) ***\n");
-		printf("0.Montpellier:\n");
-		printf("|- cpu: %d /%d\n", mon_buffer->ressources[MONTPELLIER][CPU],mon_buffer->maxressources[MONTPELLIER][CPU]);
-		printf("|- stockage: %d /%d\n", mon_buffer->ressources[MONTPELLIER][STOCKAGE],mon_buffer->maxressources[MONTPELLIER][STOCKAGE]);
-		printf("1.Lyon:\n");
-		printf("|- cpu: %d /%d\n", mon_buffer->ressources[LYON][CPU], mon_buffer->maxressources[LYON][CPU]);
-		printf("|- stockage: %d /%d\n", mon_buffer->ressources[LYON][STOCKAGE],mon_buffer->maxressources[LYON][STOCKAGE] );
-		printf("2.Paris:\n");
-		printf("|- cpu: %d /%d\n", mon_buffer->ressources[PARIS][CPU],mon_buffer->maxressources[PARIS][CPU] );
-		printf("|- stockage: %d /%d\n", mon_buffer->ressources[PARIS][STOCKAGE],mon_buffer->maxressources[PARIS][STOCKAGE] );
-		printf("*** FIN DE NOTIFICATION ***\n");
+
+		// affichage
+		printf(strnotif);
 		// rappel du dernier message
 		printf("\n%s\n", lastmessage);
 	}
@@ -107,6 +105,14 @@ int main(int argc, char** argv) {
 	}
 	printf("[+]Connecté au serveur de notifications.\n");
 
+	// attente confirmation HANDSHAKE
+	memset(message, 0, sizeof(message));
+	if (recv(clientSocketN, message, sizeof(message), 0) < 1) {
+		perror("receive confirmation from notif");
+	}
+	printf("[+]Confirmation de notification reçue: %s.\n", message);
+
+
 	// MESSAGE D'ACCEUIL
 	printf("\n**********************************************************\n");
 	printf("Prêt à recevoir les demandes.\n");
@@ -164,7 +170,7 @@ int main(int argc, char** argv) {
 		messageloc.mylocation.cpu = buffer.cpu;
 		strcpy(messageloc.mylocation.nom , buffer.nom);
 		messageloc.mylocation.stockage = buffer.stockage;
-
+	
 		// envoi de la demande
 		if(send(clientSocket, &messageloc, sizeof(messageloc),0) < 0) {
 			perror("send client");
@@ -187,8 +193,6 @@ int main(int argc, char** argv) {
 			myprintf("\nConfirmation reçue du serveur.\n");
 			resetprintf();
 		}
-
-
 	}
  
 	return 0;

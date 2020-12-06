@@ -32,9 +32,59 @@ pthread_mutex_t cloud_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
+// construction d'une chaine de notification
+buildNotif(char* strnotif, cloudstate *lecloud){
+	char tmpnotif[LNG_NOTIF];
+	// construction de la notification
+	sprintf(tmpnotif,"\n*** ETAT DU SYSTEME (actuel /max) ***\n");
+	strcpy(strnotif, tmpnotif);
+	sprintf(tmpnotif,"0.Montpellier:\n");
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- cpu: %d /%d\n", lecloud->ressources[MONTPELLIER][CPU],lecloud->maxressources[MONTPELLIER][CPU]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- stockage: %d /%d\n", lecloud->ressources[MONTPELLIER][STOCKAGE],lecloud->maxressources[MONTPELLIER][STOCKAGE]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"1.Lyon:\n");
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- cpu: %d /%d\n", lecloud->ressources[LYON][CPU], lecloud->maxressources[LYON][CPU]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- stockage: %d /%d\n", lecloud->ressources[LYON][STOCKAGE],lecloud->maxressources[LYON][STOCKAGE] );
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"2.Paris:\n");
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- cpu: %d /%d\n", lecloud->ressources[PARIS][CPU],lecloud->maxressources[PARIS][CPU] );
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- stockage: %d /%d\n", lecloud->ressources[PARIS][STOCKAGE],lecloud->maxressources[PARIS][STOCKAGE] );
+	strcat(strnotif, tmpnotif);
+	printf("3.Partagé\n");
+	printf("|- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
+	printf("|- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
+	printf("|- Lyon:\n");
+	printf("|- cpu: %d\n", lecloud->ressources_partagees[LYON][CPU]);
+	printf("|- stockage: %d\n", lecloud->ressources_partagees[LYON][STOCKAGE]);
+	printf("|- Paris:\n");
+	printf("|- cpu: %d\n", lecloud->ressources_partagees[PARIS][CPU]);
+	printf("|- stockage: %d\n", lecloud->ressources_partagees[PARIS][STOCKAGE]);
+	printf("4.Par personnes\n");
+	for (int i = 0; i < sizeof(lecloud->exclusif)/sizeof(location); i++) {
+		printf("|- %s\n", lecloud->exclusif[i].nom);
+		printf("|-- %s\n", lecloud->exclusif[i].cpu);
+		printf("|-- %s\n", lecloud->exclusif[i].stockage);
+	}
+	for (int i = 0; i < sizeof(lecloud->partage)/sizeof(location); i++) {
+		printf("|- %s\n", lecloud->partage[i].nom);
+		printf("|-- %s\n", lecloud->partage[i].cpu);
+		printf("|-- %s\n", lecloud->partage[i].stockage);
+	}
+	sprintf(tmpnotif,"*** FIN DE NOTIFICATION ***\n");
+	strcat(strnotif, tmpnotif);
+}
+
 // fonction du thread de notification, pour notifier le thread de notif du client via le socket de notif
 void notification(int my_socket) {
 	cloudstate *lecloud;
+	char strnotif[LNG_NOTIF];
+
 	key_t key = ftok("server", 2);
 
 	int sh_id = shmget(key, sizeof(cloudstate), 0666);
@@ -55,44 +105,19 @@ void notification(int my_socket) {
 
 		pthread_cond_wait(&t_cond, &t_mutex);
 
+		// construction de la notification
+		buildNotif(strnotif, lecloud);
+
 		printf("Je pousse la notification au socket %d !\n",my_socket);
 
-		if (send(my_socket, lecloud, sizeof(cloudstate), 0) < 0) {
+		if (send(my_socket, strnotif, sizeof(strnotif), 0) < 0) {
 			perror("send client");
 			break ;
 		}
+
 		// Affichage côté serveur pour information
-		printf("\n*** ETAT DU SYSTEME (actuel /max) ***\n");
-		printf("0.Montpellier:\n");
-		printf("|- cpu: %d /%d\n", lecloud->ressources[MONTPELLIER][CPU],lecloud->maxressources[MONTPELLIER][CPU]);
-		printf("|- stockage: %d /%d\n", lecloud->ressources[MONTPELLIER][STOCKAGE],lecloud->maxressources[MONTPELLIER][STOCKAGE]);
-		printf("1.Lyon:\n");
-		printf("|- cpu: %d /%d\n", lecloud->ressources[LYON][CPU], lecloud->maxressources[LYON][CPU]);
-		printf("|- stockage: %d /%d\n", lecloud->ressources[LYON][STOCKAGE],lecloud->maxressources[LYON][STOCKAGE] );
-		printf("2.Paris:\n");
-		printf("|- cpu: %d /%d\n", lecloud->ressources[PARIS][CPU],lecloud->maxressources[PARIS][CPU] );
-		printf("|- stockage: %d /%d\n", lecloud->ressources[PARIS][STOCKAGE],lecloud->maxressources[PARIS][STOCKAGE] );
-		printf("3.Partagé\n");
-		printf("|- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
-		printf("|- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
-		printf("|- Lyon:\n");
-		printf("|- cpu: %d\n", lecloud->ressources_partagees[LYON][CPU]);
-		printf("|- stockage: %d\n", lecloud->ressources_partagees[LYON][STOCKAGE]);
-		printf("|- Paris:\n");
-		printf("|- cpu: %d\n", lecloud->ressources_partagees[PARIS][CPU]);
-		printf("|- stockage: %d\n", lecloud->ressources_partagees[PARIS][STOCKAGE]);
-		printf("4.Par personnes\n");
-		for (int i = 0; i < sizeof(lecloud->exclusif)/sizeof(location); i++) {
-			printf("|- %s\n", lecloud->exclusif[i].nom);
-			printf("|-- %s\n", lecloud->exclusif[i].cpu);
-			printf("|-- %s\n", lecloud->exclusif[i].stockage);
-		}
-		for (int i = 0; i < sizeof(lecloud->partage)/sizeof(location); i++) {
-			printf("|- %s\n", lecloud->partage[i].nom);
-			printf("|-- %s\n", lecloud->partage[i].cpu);
-			printf("|-- %s\n", lecloud->partage[i].stockage);
-		}
-		printf("*** FIN DE NOTIFICATION ***\n");
+		printf(strnotif);
+
 		pthread_mutex_unlock(&t_mutex);
 
 	}
@@ -357,6 +382,8 @@ int main(int argc, char** argv) {
 	// boucle d'écoute des clients
 	printf("\nEn attente de connexion de client...\n");
 	while (1) {
+		char strnotif[LNG_NOTIF];
+
 		// attente d'un client
 		newSocket = accept(sockfd, (struct sockaddr*) &newAddr, &addr_size);
 		if(newSocket < 0){
@@ -370,9 +397,20 @@ int main(int argc, char** argv) {
 			exit(1);
 		}
 		printf("Connection 'Notif' acceptée de %s:%d\n", inet_ntoa(newAddrN.sin_addr), ntohs(newAddrN.sin_port));
+
+		// HANDSHAKE
+		strcpy(message, "BONJOUR");
+		printf("Envoi d'un message de confirmation de connexion au socket %d:%s\n",newSocketN, message);
+		if (send(newSocketN, message, sizeof(message), 0) < 0) {
+			perror("echec de send client confirmation de notif");
+			break ;
+		}
 		
+		// première notif
 		printf("Je pousse l'état du système au socket %d !\n",newSocketN);
-		if (send(newSocketN, mycloud, sizeof(cloudstate), 0) < 0) {
+		// construction de la notification
+		buildNotif(strnotif, mycloud);
+		if (send(newSocketN, strnotif, sizeof(strnotif), 0) < 0) {
 			perror("send client");
 			break ;
 		}

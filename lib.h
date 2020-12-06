@@ -11,6 +11,8 @@
 #define PARIS 2
 #define NB_PLACES 3
 
+#define LNG_NOTIF	2048
+
 // structure pour envoyer une demande de location
 typedef struct {
 	int cpu;
