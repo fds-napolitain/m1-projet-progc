@@ -159,16 +159,18 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 	if (mode == PARTAGE) {
 		value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
 	}
-	sb.sem_op = -value; // si on en veut +N, il faut décrementer de N. 
-	//printf("#DEBUG: ajout dans le semaphore %d à la position %d de la valeur %d\n", semid, index, -value );
-	if (semop(semid, &sb, 1) == -1) {
-		perror("semop setRessource");
-		exit(1); //BADABOUM, tant pis pour les mutex et sem...
-	} else {
-		// on a mis à jour le sem, alors on met à jour la variable partagée
-		pthread_mutex_lock(&cloud_mutex);
-		mycloud->ressources[loc][ress] -= value;
-		pthread_mutex_unlock(&cloud_mutex);
+	if (value != 0) {
+		sb.sem_op = -value; // si on en veut +N, il faut décrementer de N. 
+		//printf("#DEBUG: ajout dans le semaphore %d à la position %d de la valeur %d\n", semid, index, -value );
+		if (semop(semid, &sb, 1) == -1) {
+			perror("semop setRessource");
+			exit(1); //BADABOUM, tant pis pour les mutex et sem...
+		} else {
+			// on a mis à jour le sem, alors on met à jour la variable partagée
+			pthread_mutex_lock(&cloud_mutex);
+			mycloud->ressources[loc][ress] -= value;
+			pthread_mutex_unlock(&cloud_mutex);
+		}
 	}
 
 	int existe = -1; // écrire à un emplacement existant (lié au nom)
