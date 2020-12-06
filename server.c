@@ -33,7 +33,7 @@ pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 // construction d'une chaine de notification
-buildNotif(char* strnotif, cloudstate *lecloud){
+void buildNotif(char* strnotif, cloudstate *lecloud){
 	char tmpnotif[LNG_NOTIF];
 	// construction de la notification
 	sprintf(tmpnotif,"\n*** ETAT DU SYSTEME (actuel /max) ***\n");
@@ -56,25 +56,41 @@ buildNotif(char* strnotif, cloudstate *lecloud){
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"|- stockage: %d /%d\n", lecloud->ressources[PARIS][STOCKAGE],lecloud->maxressources[PARIS][STOCKAGE] );
 	strcat(strnotif, tmpnotif);
-	printf("3.Partagé\n");
-	printf("|- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
-	printf("|- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
-	printf("|- Lyon:\n");
-	printf("|- cpu: %d\n", lecloud->ressources_partagees[LYON][CPU]);
-	printf("|- stockage: %d\n", lecloud->ressources_partagees[LYON][STOCKAGE]);
-	printf("|- Paris:\n");
-	printf("|- cpu: %d\n", lecloud->ressources_partagees[PARIS][CPU]);
-	printf("|- stockage: %d\n", lecloud->ressources_partagees[PARIS][STOCKAGE]);
-	printf("4.Par personnes\n");
+	sprintf(tmpnotif,"3.Partagé\n");
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- Lyon:\n");
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- cpu: %d\n", lecloud->ressources_partagees[LYON][CPU]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- stockage: %d\n", lecloud->ressources_partagees[LYON][STOCKAGE]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- Paris:\n");
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- cpu: %d\n", lecloud->ressources_partagees[PARIS][CPU]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"|- stockage: %d\n", lecloud->ressources_partagees[PARIS][STOCKAGE]);
+	strcat(strnotif, tmpnotif);
+	sprintf(tmpnotif,"4.Par personnes\n");
+	strcat(strnotif, tmpnotif);
 	for (int i = 0; i < sizeof(lecloud->exclusif)/sizeof(location); i++) {
-		printf("|- %s\n", lecloud->exclusif[i].nom);
-		printf("|-- %s\n", lecloud->exclusif[i].cpu);
-		printf("|-- %s\n", lecloud->exclusif[i].stockage);
+		sprintf(tmpnotif,"|- %s\n", lecloud->exclusif[i].nom);
+		strcat(strnotif, tmpnotif);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->exclusif[i].cpu);
+		strcat(strnotif, tmpnotif);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->exclusif[i].stockage);
+		strcat(strnotif, tmpnotif);
 	}
 	for (int i = 0; i < sizeof(lecloud->partage)/sizeof(location); i++) {
-		printf("|- %s\n", lecloud->partage[i].nom);
-		printf("|-- %s\n", lecloud->partage[i].cpu);
-		printf("|-- %s\n", lecloud->partage[i].stockage);
+		sprintf(tmpnotif,"|- %s\n", lecloud->partage[i].nom);
+		strcat(strnotif, tmpnotif);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->partage[i].cpu);
+		strcat(strnotif, tmpnotif);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->partage[i].stockage);
+		strcat(strnotif, tmpnotif);
 	}
 	sprintf(tmpnotif,"*** FIN DE NOTIFICATION ***\n");
 	strcat(strnotif, tmpnotif);
