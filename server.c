@@ -78,20 +78,20 @@ void buildNotif(char* strnotif, cloudstate *lecloud){
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"4.Par personnes\n");
 	strcat(strnotif, tmpnotif);
-	for (int i = 0; i < sizeof(lecloud->exclusif)/sizeof(location); i++) {
-		sprintf(tmpnotif,"|- %s\n", lecloud->exclusif[i].nom);
+	for (int i = 0; i < sizeof(lecloud->exclusif[MONTPELLIER])/sizeof(location); i++) {
+		sprintf(tmpnotif,"|- %s\n", lecloud->exclusif[MONTPELLIER][i].nom);
 		strcat(strnotif, tmpnotif);
-		sprintf(tmpnotif,"|-- %s\n", lecloud->exclusif[i].cpu);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->exclusif[MONTPELLIER][i].cpu);
 		strcat(strnotif, tmpnotif);
-		sprintf(tmpnotif,"|-- %s\n", lecloud->exclusif[i].stockage);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->exclusif[MONTPELLIER][i].stockage);
 		strcat(strnotif, tmpnotif);
 	}
-	for (int i = 0; i < sizeof(lecloud->partage)/sizeof(location); i++) {
-		sprintf(tmpnotif,"|- %s\n", lecloud->partage[i].nom);
+	for (int i = 0; i < sizeof(lecloud->partage[MONTPELLIER])/sizeof(location); i++) {
+		sprintf(tmpnotif,"|- %s\n", lecloud->partage[MONTPELLIER][i].nom);
 		strcat(strnotif, tmpnotif);
-		sprintf(tmpnotif,"|-- %s\n", lecloud->partage[i].cpu);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->partage[MONTPELLIER][i].cpu);
 		strcat(strnotif, tmpnotif);
-		sprintf(tmpnotif,"|-- %s\n", lecloud->partage[i].stockage);
+		sprintf(tmpnotif,"|-- %s\n", lecloud->partage[MONTPELLIER][i].stockage);
 		strcat(strnotif, tmpnotif);
 	}
 	sprintf(tmpnotif,"*** FIN DE NOTIFICATION ***\n");
@@ -163,9 +163,9 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 			value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
 		} else if (value < 0) {
 			int v = 0;
-			for (int i = 0; i < sizeof(mycloud->partage)/sizeof(location); i++) {
-				if (ress == CPU && strcmp(mycloud->partage[i].nom, nom) != 0) {
-					v += mycloud->partage[i].cpu;
+			for (int i = 0; i < sizeof(mycloud->partage[loc])/sizeof(location); i++) {
+				if (ress == CPU && strcmp(mycloud->partage[loc][i].nom, nom) != 0) {
+					v += mycloud->partage[loc][i].cpu;
 				}
 			}
 			value = mycloud->ressources_partagees[loc][ress] - v;
@@ -189,62 +189,62 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 	int place_libre = -1; // écrire à un emplacement libre (suite ou emplacement libéré)
 	int i = 0;
 	if (mode == EXCLUSIF) {
-		int n = sizeof(mycloud->exclusif)/sizeof(location);
+		int n = sizeof(mycloud->exclusif[loc])/sizeof(location);
 		for (i = 0; i < n; i++) {
-			if (strcmp(mycloud->exclusif[i].nom, nom) == 0) {
+			if (strcmp(mycloud->exclusif[loc][i].nom, nom) == 0) {
 				existe = i;
 			}
-			if (mycloud->exclusif[i].cpu == 0 && mycloud->exclusif[i].stockage == 0) {
+			if (mycloud->exclusif[loc][i].cpu == 0 && mycloud->exclusif[loc][i].stockage == 0) {
 				place_libre = i;
 			}
 		}
 		if (existe != -1) {
-			strcpy(mycloud->exclusif[existe].nom, nom);
+			strcpy(mycloud->exclusif[loc][existe].nom, nom);
 			if (ress == CPU) {
-				mycloud->exclusif[existe].cpu += value;
+				mycloud->exclusif[loc][existe].cpu += value;
 			} else {
-				mycloud->exclusif[existe].stockage += value;
+				mycloud->exclusif[loc][existe].stockage += value;
 			}
 		} else {
 			if (place_libre != -1) {
 				i = place_libre;
 			}
 			if (ress == CPU) {
-				mycloud->exclusif[i].cpu += value;
+				mycloud->exclusif[loc][i].cpu += value;
 			} else {
-				mycloud->exclusif[i].stockage += value;
+				mycloud->exclusif[loc][i].stockage += value;
 			}
-			location* p = realloc(mycloud->exclusif, sizeof(mycloud->exclusif)+sizeof(location));
-			mycloud->exclusif = p;
+			location* p = realloc(mycloud->exclusif[loc], sizeof(mycloud->exclusif[loc])+sizeof(location));
+			mycloud->exclusif[loc] = p;
 		}
 	} else {
-		int n = sizeof(mycloud->partage)/sizeof(location);
+		int n = sizeof(mycloud->partage[loc])/sizeof(location);
 		for (i = 0; i < n; i++) {
-			if (strcmp(mycloud->partage[i].nom, nom) == 0) {
+			if (strcmp(mycloud->partage[loc][i].nom, nom) == 0) {
 				existe = i;
 			}
-			if (mycloud->exclusif[i].cpu == 0 && mycloud->exclusif[i].stockage == 0) {
+			if (mycloud->exclusif[loc][i].cpu == 0 && mycloud->exclusif[loc][i].stockage == 0) {
 				place_libre = i;
 			}
 		}
 		if (!existe) {
-			strcpy(mycloud->partage[existe].nom, nom);
+			strcpy(mycloud->partage[loc][existe].nom, nom);
 			if (ress == CPU) {
-				mycloud->partage[existe].cpu += value;
+				mycloud->partage[loc][existe].cpu += value;
 			} else {
-				mycloud->partage[existe].stockage += value;
+				mycloud->partage[loc][existe].stockage += value;
 			}
 		} else {
 			if (place_libre != -1) {
 				i = place_libre;
 			}
 			if (ress == CPU) {
-				mycloud->partage[i].cpu += value;
+				mycloud->partage[loc][i].cpu += value;
 			} else {
-				mycloud->partage[i].stockage += value;
+				mycloud->partage[loc][i].stockage += value;
 			}
-			location* p = realloc(mycloud->partage, sizeof(mycloud->partage)+sizeof(location));
-			mycloud->partage = p;
+			location* p = realloc(mycloud->partage[loc], sizeof(mycloud->partage[loc])+sizeof(location));
+			mycloud->partage[loc] = p;
 		}
 		mycloud->ressources_partagees[loc][ress] += value;
 	}
@@ -321,8 +321,14 @@ int main(int argc, char** argv) {
 	mycloud->ressources[LYON][STOCKAGE] = 			mycloud->maxressources[LYON][STOCKAGE];
 	mycloud->ressources[PARIS][CPU] = 				mycloud->maxressources[PARIS][CPU];
 	mycloud->ressources[PARIS][STOCKAGE] = 			mycloud->maxressources[PARIS][STOCKAGE];
-	mycloud->exclusif = malloc(sizeof(location));
-	mycloud->partage = malloc(sizeof(location));
+
+	// init des états par personnes
+	mycloud->exclusif[MONTPELLIER] = malloc(sizeof(location));
+	mycloud->partage[MONTPELLIER] = malloc(sizeof(location));
+	mycloud->exclusif[LYON] = malloc(sizeof(location));
+	mycloud->partage[LYON] = malloc(sizeof(location));
+	mycloud->exclusif[PARIS] = malloc(sizeof(location));
+	mycloud->partage[PARIS] = malloc(sizeof(location));
 
 	// init des ressources partagées
 	mycloud->ressources_partagees[MONTPELLIER][CPU] = 		0;

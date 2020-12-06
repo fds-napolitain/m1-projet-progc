@@ -35,6 +35,6 @@ typedef struct {
 	int ressources[NB_PLACES][NB_ITEMS];
 	int maxressources[NB_PLACES][NB_ITEMS];
 	int ressources_partagees[NB_PLACES][NB_ITEMS];
-	location* exclusif;
-	location* partage;
+	location* exclusif[NB_PLACES];
+	location* partage[NB_PLACES];
 } cloudstate;
