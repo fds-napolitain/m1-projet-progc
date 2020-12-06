@@ -60,21 +60,21 @@ void buildNotif(char* strnotif, cloudstate *lecloud){
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"|- Montpellier:\n");
 	strcat(strnotif, tmpnotif);
-	sprintf(tmpnotif,"|- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
+	sprintf(tmpnotif,"|  |- cpu: %d\n", lecloud->ressources_partagees[MONTPELLIER][CPU]);
 	strcat(strnotif, tmpnotif);
-	sprintf(tmpnotif,"|- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
+	sprintf(tmpnotif,"|  |- stockage: %d\n", lecloud->ressources_partagees[MONTPELLIER][STOCKAGE]);
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"|- Lyon:\n");
 	strcat(strnotif, tmpnotif);
-	sprintf(tmpnotif,"|- cpu: %d\n", lecloud->ressources_partagees[LYON][CPU]);
+	sprintf(tmpnotif,"|  |- cpu: %d\n", lecloud->ressources_partagees[LYON][CPU]);
 	strcat(strnotif, tmpnotif);
-	sprintf(tmpnotif,"|- stockage: %d\n", lecloud->ressources_partagees[LYON][STOCKAGE]);
+	sprintf(tmpnotif,"|  |- stockage: %d\n", lecloud->ressources_partagees[LYON][STOCKAGE]);
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"|- Paris:\n");
 	strcat(strnotif, tmpnotif);
-	sprintf(tmpnotif,"|- cpu: %d\n", lecloud->ressources_partagees[PARIS][CPU]);
+	sprintf(tmpnotif,"|  |- cpu: %d\n", lecloud->ressources_partagees[PARIS][CPU]);
 	strcat(strnotif, tmpnotif);
-	sprintf(tmpnotif,"|- stockage: %d\n", lecloud->ressources_partagees[PARIS][STOCKAGE]);
+	sprintf(tmpnotif,"|  |- stockage: %d\n", lecloud->ressources_partagees[PARIS][STOCKAGE]);
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif,"4.Par personnes\n");
 	strcat(strnotif, tmpnotif);
@@ -163,12 +163,16 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 			value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
 		} else if (value < 0) {
 			int v = 0;
+			printf("Mode partagé, parcours de liste... ");
 			for (int i = 0; i < sizeof(mycloud->partage[loc])/sizeof(location); i++) {
+				printf("%d, ",i);
 				if (ress == CPU && strcmp(mycloud->partage[loc][i].nom, nom) != 0) {
+					printf("v=%d, ",v);
 					v += mycloud->partage[loc][i].cpu;
 				}
 			}
-			value = mycloud->ressources_partagees[loc][ress] - v;
+			value = - (mycloud->ressources_partagees[loc][ress] - v);
+			printf("value=%d \n",value);
 		}
 	}
 	if (value != 0) {

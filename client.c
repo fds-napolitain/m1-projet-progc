@@ -119,11 +119,6 @@ int main(int argc, char** argv) {
 	printf("Saisir des demandes positives pour prendre des ressources.\n");
 	printf("Saisir des demandes négatives pour libérer des ressources.\n");
 	printf("Les demandes nulles ne sont pas permises par le serveur.\n");
-//TODO
-	printf("NOTE:\n");
-	printf(" -  pour l'instant le mode partagé ou dédié n'est pas géré.)\n");
-	printf(" -  le nom de client est réservé à un usage future.\n");
-//END TODO
 	printf("**********************************************************\n");
 	printf("\n");
 
@@ -137,10 +132,12 @@ int main(int argc, char** argv) {
 	printf("thread de notification créé.\n");
 	printf("\n");
 
+	// le nom n'est demandé qu'une seule fois
+	printf("\n");
+	myprintf("Client: ");
+	scanf("%[^\n]s", buffer.nom);
+
 	while (1) {
-		printf("\n");
-		myprintf("Client: ");
-		scanf("%[^\n]s", buffer.nom);
 
 		myprintf("Cpu: ");
 		scanf("%d", &buffer.cpu);
