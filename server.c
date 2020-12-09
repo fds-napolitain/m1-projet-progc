@@ -202,7 +202,7 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 				place_libre = i;
 			}
 		}
-		if (existe != -1) {
+		if (existe != 0) {
 			strcpy(mycloud->exclusif[loc][existe].nom, nom);
 			if (ress == CPU) {
 				mycloud->exclusif[loc][existe].cpu += value;
@@ -223,15 +223,16 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 		}
 	} else {
 		int n = sizeof(mycloud->partage[loc])/sizeof(location);
+		printf("%i", n);
 		for (i = 0; i < n; i++) {
 			if (strcmp(mycloud->partage[loc][i].nom, nom) == 0) {
 				existe = i;
 			}
-			if (mycloud->exclusif[loc][i].cpu == 0 && mycloud->exclusif[loc][i].stockage == 0) {
+			if (mycloud->partage[loc][i].cpu == 0 && mycloud->partage[loc][i].stockage == 0) {
 				place_libre = i;
 			}
 		}
-		if (!existe) {
+		if (existe != 0) {
 			strcpy(mycloud->partage[loc][existe].nom, nom);
 			if (ress == CPU) {
 				mycloud->partage[loc][existe].cpu += value;
