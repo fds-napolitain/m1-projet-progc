@@ -207,8 +207,7 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 	int place_libre = -1; // écrire à un emplacement libre (suite ou emplacement libéré)
 	int i = 0;
 	if (mode == EXCLUSIF) {
-		int n = sizeof(*mycloud->exclusif[loc])/sizeof(location);
-		for (i = 0; i < n; i++) {
+		for (i = 0; i < NB_PERSONNES; i++) {
 			if (strcmp(mycloud->exclusif[loc][i].nom, nom) == 0) {
 				existe = i;
 			}
@@ -224,9 +223,7 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 			mycloud->exclusif[loc][place_libre].stockage += value;
 		}
 	} else {
-		int n = sizeof(*mycloud->partage[loc])/sizeof(location);
-		printf("*** %i\n", n);
-		for (i = 0; i < n; i++) {
+		for (i = 0; i < NB_PERSONNES; i++) {
 			if (strcmp(mycloud->partage[loc][i].nom, nom) == 0) {
 				existe = i;
 			}
@@ -310,12 +307,6 @@ int main(int argc, char** argv) {
 	mycloud->maxressources[PARIS][STOCKAGE] = 		100;
 
 	// init de l'état
-	mycloud->ressources[MONTPELLIER][CPU] = 		mycloud->maxressources[MONTPELLIER][CPU];
-	mycloud->ressources[MONTPELLIER][STOCKAGE] = 	mycloud->maxressources[MONTPELLIER][STOCKAGE];
-	mycloud->ressources[LYON][CPU] = 				mycloud->maxressources[LYON][CPU];
-	mycloud->ressources[LYON][STOCKAGE] = 			mycloud->maxressources[LYON][STOCKAGE];
-	mycloud->ressources[PARIS][CPU] = 				mycloud->maxressources[PARIS][CPU];
-	mycloud->ressources[PARIS][STOCKAGE] = 			mycloud->maxressources[PARIS][STOCKAGE];
 
 	// init des états par personnes
 	for (int i = 0; i < NB_PLACES; i++) {
@@ -328,12 +319,14 @@ int main(int argc, char** argv) {
 	}
 
 	// init des ressources partagées
-	mycloud->ressources_partagees[MONTPELLIER][CPU] = 		0;
-	mycloud->ressources_partagees[MONTPELLIER][STOCKAGE] = 	0;
-	mycloud->ressources_partagees[LYON][CPU] = 				0;
-	mycloud->ressources_partagees[LYON][STOCKAGE] = 		0;
-	mycloud->ressources_partagees[PARIS][CPU] = 			0;
-	mycloud->ressources_partagees[PARIS][STOCKAGE] = 		0;
+	for (int i = 0; i < NB_PLACES; i++) {
+		for (int j = 0; j < NB_ITEMS; j++) {
+			mycloud->ressources_partagees[i][j] = 0;
+			mycloud->ressources_partagees[i][j] = 0;
+			mycloud->ressources[i][j] = mycloud->maxressources[i][j];
+			mycloud->ressources[i][j] = mycloud->maxressources[i][j];
+		}
+	}
 
 	// init des verrous
 	initSem(semid, MONTPELLIER, CPU, 		mycloud->maxressources[MONTPELLIER][CPU]);
