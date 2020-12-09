@@ -184,6 +184,10 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 					printf("v=%d, ",v);
 					v += mycloud->partage[loc][i].cpu;
 				}
+				if (ress == STOCKAGE && strcmp(mycloud->partage[loc][i].nom, nom) != 0) {
+					printf("v=%d, ",v);
+					v += mycloud->partage[loc][i].stockage;
+				}
 			}
 			value = - (mycloud->ressources_partagees[loc][ress] - v);
 			printf("value=%d \n",value);
@@ -203,19 +207,21 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 		}
 	}
 
-	int existe = -1; // écrire à un emplacement existant (lié au nom)
 	int place_libre = -1; // écrire à un emplacement libre (suite ou emplacement libéré)
-	int i = 0;
 	if (mode == EXCLUSIF) {
-		for (i = 0; i < NB_PERSONNES; i++) {
+		for (int i = 0; i < NB_PERSONNES; i++) {
 			if (strcmp(mycloud->exclusif[loc][i].nom, nom) == 0) {
-				existe = i;
-			}
-			if (mycloud->exclusif[loc][i].cpu == 0 && mycloud->exclusif[loc][i].stockage == 0) {
 				place_libre = i;
 			}
 		}
-		printf("existe placelibre %d %d\n", existe, place_libre);
+		if (place_libre == -1) {
+			for (int i = 0; i < NB_PERSONNES; i++) {
+				if (mycloud->exclusif[loc][i].cpu == 0 && mycloud->exclusif[loc][i].stockage == 0) {
+					place_libre = i;
+					break;
+				}
+			}
+		}
 		strcpy(mycloud->exclusif[loc][place_libre].nom, nom);
 		if (ress == CPU) {
 			mycloud->exclusif[loc][place_libre].cpu += value;
@@ -223,15 +229,19 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 			mycloud->exclusif[loc][place_libre].stockage += value;
 		}
 	} else {
-		for (i = 0; i < NB_PERSONNES; i++) {
+		for (int i = 0; i < NB_PERSONNES; i++) {
 			if (strcmp(mycloud->partage[loc][i].nom, nom) == 0) {
-				existe = i;
-			}
-			if (mycloud->partage[loc][i].cpu == 0 && mycloud->partage[loc][i].stockage == 0) {
 				place_libre = i;
 			}
 		}
-		printf("existe placelibre %d %d\n", existe, place_libre);
+		if (place_libre == -1) {
+			for (int i = 0; i < NB_PERSONNES; i++) {
+				if (mycloud->partage[loc][i].cpu == 0 && mycloud->partage[loc][i].stockage == 0) {
+					place_libre = i;
+					break;
+				}
+			}
+		}
 		strcpy(mycloud->partage[loc][place_libre].nom, nom);
 		if (ress == CPU) {
 			mycloud->partage[loc][place_libre].cpu += value;
