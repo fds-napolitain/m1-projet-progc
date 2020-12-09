@@ -13,7 +13,7 @@
 
 #define NB_PERSONNES 10
 
-#define LNG_NOTIF 4096
+#define LNG_NOTIF 2048
 
 // structure pour envoyer une demande de location
 typedef struct {
@@ -40,3 +40,6 @@ typedef struct {
 	location exclusif[NB_PLACES][NB_PERSONNES];
 	location partage[NB_PLACES][NB_PERSONNES];
 } cloudstate;
+
+// pour initialiser
+char places[NB_PLACES][25] = {"Montpellier", "Lyon", "Paris"};

@@ -80,31 +80,35 @@ void buildNotif(char* strnotif, cloudstate *lecloud){
 	strcat(strnotif, tmpnotif);
 	sprintf(tmpnotif, "|- Exclusif\n");
 	strcat(strnotif, tmpnotif);
-	for (int i = 0; i < NB_PLACES; i++) {	
+	for (int i = 0; i < NB_PLACES; i++) {
+		sprintf(tmpnotif, "|  |- %s\n", places[i]);
+		strcat(strnotif, tmpnotif);
 		for (int j = 0; j < NB_PERSONNES; j++) {
 			if (lecloud->exclusif[i][j].cpu == 0 && lecloud->exclusif[i][j].stockage == 0) {
 				break;
 			}
-			sprintf(tmpnotif,"|  |- %s\n", lecloud->exclusif[i][j].nom);
+			sprintf(tmpnotif,"|  |  |- %s\n", lecloud->exclusif[i][j].nom);
 			strcat(strnotif, tmpnotif);
-			sprintf(tmpnotif,"|  |- %d\n", lecloud->exclusif[i][j].cpu);
+			sprintf(tmpnotif,"|  |  |- %d\n", lecloud->exclusif[i][j].cpu);
 			strcat(strnotif, tmpnotif);
-			sprintf(tmpnotif,"|  |- %d\n", lecloud->exclusif[i][j].stockage);
+			sprintf(tmpnotif,"|  |  |- %d\n", lecloud->exclusif[i][j].stockage);
 			strcat(strnotif, tmpnotif);
 		}
 	}
 	sprintf(tmpnotif, "|- Partagé\n");
 	strcat(strnotif, tmpnotif);
 	for (int i = 0; i < NB_PLACES; i++) {
+		sprintf(tmpnotif, "|  |- %s\n", places[i]);
+		strcat(strnotif, tmpnotif);
 		for (int j = 0; j < NB_PERSONNES; j++) {
 			if (lecloud->partage[i][j].cpu == 0 && lecloud->partage[i][j].stockage == 0) {
 				break;
 			}
-			sprintf(tmpnotif,"|  |- %s\n", lecloud->partage[i][j].nom);
+			sprintf(tmpnotif,"|  |  |- %s\n", lecloud->partage[i][j].nom);
 			strcat(strnotif, tmpnotif);
-			sprintf(tmpnotif,"|  |- %d\n", lecloud->partage[i][j].cpu);
+			sprintf(tmpnotif,"|  |  |- %d\n", lecloud->partage[i][j].cpu);
 			strcat(strnotif, tmpnotif);
-			sprintf(tmpnotif,"|  |- %d\n", lecloud->partage[i][j].stockage);
+			sprintf(tmpnotif,"|  |  |- %d\n", lecloud->partage[i][j].stockage);
 			strcat(strnotif, tmpnotif);
 		}
 	}
