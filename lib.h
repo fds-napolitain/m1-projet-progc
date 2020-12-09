@@ -11,7 +11,9 @@
 #define PARIS 2
 #define NB_PLACES 3
 
-#define LNG_NOTIF	2048
+#define NB_PERSONNES 10
+
+#define LNG_NOTIF 4096
 
 // structure pour envoyer une demande de location
 typedef struct {
@@ -35,6 +37,6 @@ typedef struct {
 	int ressources[NB_PLACES][NB_ITEMS];
 	int maxressources[NB_PLACES][NB_ITEMS];
 	int ressources_partagees[NB_PLACES][NB_ITEMS];
-	location* exclusif[NB_PLACES];
-	location* partage[NB_PLACES];
+	location exclusif[NB_PLACES][NB_PERSONNES];
+	location partage[NB_PLACES][NB_PERSONNES];
 } cloudstate;
