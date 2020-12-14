@@ -176,9 +176,10 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 	struct sembuf sb;
 	sb.sem_num = index;
 	sb.sem_flg = 0;
+	int new_value = value;
 	if (mode == PARTAGE) {
 		if (value > 0 && value - mycloud->ressources_partagees[loc][ress] >= 0) {
-			value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
+			new_value -= mycloud->ressources_partagees[loc][ress]; // utiliser les res partagees
 		} else if (value < 0) {
 			int v = 0;
 			printf("Mode partagé, parcours de liste... ");
@@ -193,12 +194,12 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 					v += mycloud->partage[loc][i].stockage;
 				}
 			}
-			value = - (mycloud->ressources_partagees[loc][ress] - v);
+			new_value = - (mycloud->ressources_partagees[loc][ress] - v);
 			printf("value=%d \n",value);
 		}
 	}
-	if (value != 0) {
-		sb.sem_op = -value; // si on en veut +N, il faut décrementer de N. 
+	if (new_value != 0) {
+		sb.sem_op = -new_value; // si on en veut +N, il faut décrementer de N. 
 		//printf("#DEBUG: ajout dans le semaphore %d à la position %d de la valeur %d\n", semid, index, -value );
 		if (semop(semid, &sb, 1) == -1) {
 			perror("semop setRessource");
@@ -252,7 +253,7 @@ void setRessource(int semid, cloudstate* mycloud, int loc, int ress, int value, 
 		} else {
 			mycloud->partage[loc][place_libre].stockage += value;
 		}
-		mycloud->ressources_partagees[loc][ress] += value;
+		mycloud->ressources_partagees[loc][ress] += new_value;
 	}
 }
 
